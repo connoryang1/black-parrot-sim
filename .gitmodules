@@ -1,6 +1,6 @@
 [submodule "black-parrot"]
     path = black-parrot
-    url = https://github.com/black-parrot/black-parrot/
+    url = https://github.com/connoryang1/black-parrot/
     branch = master
     ignore = dirty
 [submodule "black-parrot-sdk"]
