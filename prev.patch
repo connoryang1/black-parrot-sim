@@ -1,0 +1,2138 @@
+diff --git a/README.md b/README.md
+index 28bcbd9e..7c0286af 100644
+--- a/README.md
++++ b/README.md
+@@ -107,3 +107,11 @@ If used for academic research, please cite:
+ 
+ D. Petrisko, F. Gilani, M. Wyse, D. C. Jung, S. Davidson, P. Gao, C. Zhao, Z. Azad, S. Canakci, B. Veluri, T. Guarino, A. J. Joshi, M. Oskin, M. B. Taylor, ["BlackParrot: An Agile Open Source RISC-V Multicore for Accelerator SoCs"](https://taylor-bsg.github.io/papers/BlackParrot_IEEE_Micro_2020.pdf), in *IEEE Micro Special Issue on Agile and Open-Source Hardware*, July/August, 2020. doi: 10.1109/MM.2020.2996145
+ 
++## RUNNING MULTITHREAD
++To run with multithreading copy the [kylee.riscv](kylee.riscv) into the path `sdk/prog/risv-tests`. 
++
++Then, `cd bp_top/syn/` and run `make build_dump.sc sim_dump.sc SUITE=bp-tests PROG=kylee CFG=e_bp_multicore_1_multithread_2_cfg`. If you want to look at the waveforms from this test, you can then run `make wave.sc SUITE=bp-tests PROG=kylee CFG=e_bp_multicore_1_multithread_2_cfg`
++
++If you want to know what the multithread test does, check [kylee.c](kylee.c). 
++
++NOTE: I have only enabled 2 thread configuration (CFG) so do NOT try switching to any thread except for 0 or 1. I'm happy to add configs for additional threads but we do not check that you're switching to a valid thread so make sure your code is safe. 
+diff --git a/bad_prog.riscv b/bad_prog.riscv
+new file mode 100755
+index 00000000..a3bbd140
+Binary files /dev/null and b/bad_prog.riscv differ
+diff --git a/benchmark.riscv b/benchmark.riscv
+new file mode 100755
+index 00000000..52b7fc24
+Binary files /dev/null and b/benchmark.riscv differ
+diff --git a/bp_be/src/include/bp_be_ctl_pkgdef.svh b/bp_be/src/include/bp_be_ctl_pkgdef.svh
+index 006a2f37..4a5d2f36 100644
+--- a/bp_be/src/include/bp_be_ctl_pkgdef.svh
++++ b/bp_be/src/include/bp_be_ctl_pkgdef.svh
+@@ -259,6 +259,12 @@
+     logic sret;
+     logic wfi;
+     logic csrw;
++    // This struct moves with the instruction through the pipeline. `ctxtsw` is
++    // set to 1 when the instruction is a csrw that changes the context ID
++    // (ctxt). `ctxtsw` is set to 0 for any other instruction or crsw that does
++    // not write to ctxt. Note that `ctxtsw` will still be 1 even if the crsw
++    // writes the current context ID to ctxt.
++    logic ctxtsw;
+   }  bp_be_special_s;
+ 
+   typedef struct packed
+diff --git a/bp_be/src/include/bp_be_defines.svh b/bp_be/src/include/bp_be_defines.svh
+index f1d3345e..da2480c4 100644
+--- a/bp_be/src/include/bp_be_defines.svh
++++ b/bp_be/src/include/bp_be_defines.svh
+@@ -135,6 +135,7 @@
+       logic                           instret;                                                     \
+       logic [vaddr_width_p-1:0]       pc;                                                          \
+       logic [vaddr_width_p-1:0]       npc;                                                         \
++      logic [vaddr_width_p-1:0]       npc_next_context;                                            \
+       logic [vaddr_width_p-1:0]       vaddr;                                                       \
+       rv64_instr_s                    instr;                                                       \
+       bp_be_pte_leaf_s                pte_leaf;                                                    \
+@@ -146,6 +147,12 @@
+       logic                           fencei;                                                      \
+       logic                           sfence;                                                      \
+       logic                           csrw;                                                        \
++      // `ctxtsw` is 1 when the instruction updates the context ID CSR. It is 0                    \
++      // otherwise.                                                                                \
++      logic                           ctxtsw;                                                      \
++      logic                           translation_en_n_next_context;                               \
++      logic [rv64_priv_width_gp-1:0]  priv_n_next_context;                                         \
++      logic [asid_width_p-1:0]        asid_next_context;                                           \
+       logic                           wfi;                                                         \
+       logic                           itlb_miss;                                                   \
+       logic                           icache_miss;                                                 \
+@@ -191,6 +198,7 @@
+     typedef struct packed                                                                          \
+     {                                                                                              \
+       logic [rv64_priv_width_gp-1:0] priv_mode;                                                    \
++      logic [asid_width_p-1:0]       satp_asid;                                                     \
+       logic [ptag_width_p-1:0]       satp_ppn;                                                     \
+       logic                          translation_en;                                               \
+       logic                          mstatus_sum;                                                  \
+@@ -246,7 +254,7 @@
+     (paddr_width_mp - page_offset_width_gp + 7)
+ 
+   `define bp_be_commit_pkt_width(vaddr_width_mp, paddr_width_mp) \
+-    (3 + `bp_be_pte_leaf_width(paddr_width_mp) +  3*vaddr_width_mp + instr_width_gp + rv64_priv_width_gp + 16)
++    (3 + 1 /*ctxtsw*/+ 1 /*translation_en_n_next_context*/+ vaddr_width_p /*npc_next_context*/ +rv64_priv_width_gp + asid_width_p + `bp_be_pte_leaf_width(paddr_width_mp) +  3*vaddr_width_mp + instr_width_gp + rv64_priv_width_gp + 16)
+ 
+   `define bp_be_wb_pkt_width(vaddr_width_mp) \
+     (3                                                                                             \
+@@ -265,8 +273,8 @@
+      + `bp_be_pte_leaf_width(paddr_width_mp)                                                       \
+      )
+ 
+-  `define bp_be_trans_info_width(ptag_width_mp) \
+-    (rv64_priv_width_gp+ptag_width_mp+3)
++  `define bp_be_trans_info_width(asid_width_p, ptag_width_mp) \
++    (rv64_priv_width_gp+asid_width_p+ptag_width_mp+3)
+ 
+   `define bp_be_decode_info_width \
+     (rv64_priv_width_gp+8)
+diff --git a/bp_be/src/v/bp_be_calculator/bp_be_calculator_top.sv b/bp_be/src/v/bp_be_calculator/bp_be_calculator_top.sv
+index ca48b4e4..0fcb4397 100644
+--- a/bp_be/src/v/bp_be_calculator/bp_be_calculator_top.sv
++++ b/bp_be/src/v/bp_be_calculator/bp_be_calculator_top.sv
+@@ -31,6 +31,7 @@ module bp_be_calculator_top
+    , localparam ptw_fill_pkt_width_lp   = `bp_be_ptw_fill_pkt_width(vaddr_width_p, paddr_width_p)
+    , localparam wb_pkt_width_lp         = `bp_be_wb_pkt_width(vaddr_width_p)
+    , localparam decode_info_width_lp    = `bp_be_decode_info_width
++   , localparam trans_info_width_lp     = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
+ 
+    // From BP BE specifications
+    , localparam pipe_stage_els_lp = 6
+@@ -55,6 +56,7 @@ module bp_be_calculator_top
+   , output logic [wb_pkt_width_lp-1:0]              iwb_pkt_o
+   , output logic [wb_pkt_width_lp-1:0]              fwb_pkt_o
+   , output logic [ptw_fill_pkt_width_lp-1:0]        ptw_fill_pkt_o
++  , output logic [trans_info_width_lp-1:0]          trans_info_o
+ 
+   , input                                           timer_irq_i
+   , input                                           software_irq_i
+@@ -88,6 +90,9 @@ module bp_be_calculator_top
+   , input [dcache_stat_mem_pkt_width_lp-1:0]        stat_mem_pkt_i
+   , output logic                                    stat_mem_pkt_yumi_o
+   , output logic [dcache_stat_info_width_lp-1:0]    stat_mem_o
++  // The ID of the context currently running on the hart.
++  // TODO: Should have a different width?
++  , output logic [multithread_p-1:0]                curr_ctxt_o
+   );
+ 
+   // Declare parameterizable structs
+@@ -96,6 +101,7 @@ module bp_be_calculator_top
+ 
+   `bp_cast_i(bp_be_dispatch_pkt_s, dispatch_pkt);
+   `bp_cast_o(bp_be_commit_pkt_s, commit_pkt);
++  `bp_cast_o(bp_be_trans_info_s, trans_info);
+ 
+ 
+   // Pipeline stage registers
+@@ -106,7 +112,6 @@ module bp_be_calculator_top
+   bp_be_wb_pkt_s [pipe_stage_els_lp-1:0] comp_stage_r;
+ 
+   bp_be_ptw_fill_pkt_s ptw_fill_pkt;
+-  bp_be_trans_info_s   trans_info_lo;
+   rv64_frm_e           frm_dyn_lo;
+ 
+   bp_be_wb_pkt_s long_iwb_pkt, long_fwb_pkt;
+@@ -122,7 +127,10 @@ module bp_be_calculator_top
+   logic pipe_mem_store_access_fault_lo;
+   logic pipe_mem_store_page_fault_lo;
+ 
+-  logic pipe_sys_illegal_instr_lo, pipe_sys_csrw_lo;
++  // `pipe_sys_ctxtsw_lo` is set to 1 when the instruction in stage 1 (?) is a
++  // csrw instruction that writes a context ID.
++  // TODO: What does `lo` mean here? Logic Out?
++  logic pipe_sys_illegal_instr_lo, pipe_sys_csrw_lo, pipe_sys_ctxtsw_lo;
+ 
+   logic pipe_ctl_data_lo_v, pipe_int_data_lo_v, pipe_aux_data_lo_v, pipe_mem_early_data_lo_v, pipe_mem_final_data_lo_v, pipe_sys_data_lo_v, pipe_mul_data_lo_v, pipe_fma_data_lo_v;
+   logic pipe_long_idata_lo_v, pipe_long_idata_lo_yumi, pipe_long_fdata_lo_v, pipe_long_fdata_lo_yumi;
+@@ -228,12 +236,16 @@ module bp_be_calculator_top
+ 
+      ,.illegal_instr_o(pipe_sys_illegal_instr_lo)
+      ,.csrw_o(pipe_sys_csrw_lo)
++     // `pipe_sys_ctxtsw_lo` is set to 1 if the instruction in the system
++     // pipeline is a csrw instruction that updates the context ID.
++     ,.ctxtsw_o(pipe_sys_ctxtsw_lo)
+      ,.data_o(pipe_sys_data_lo)
+      ,.v_o(pipe_sys_data_lo_v)
+ 
+      ,.decode_info_o(decode_info_o)
+-     ,.trans_info_o(trans_info_lo)
++     ,.trans_info_o(trans_info_cast_o)
+      ,.frm_dyn_o(frm_dyn_lo)
++     ,.curr_ctxt_o(curr_ctxt_o)
+      );
+ 
+ 
+@@ -329,7 +341,7 @@ module bp_be_calculator_top
+      ,.early_v_o(pipe_mem_early_data_lo_v)
+      ,.final_v_o(pipe_mem_final_data_lo_v)
+ 
+-     ,.trans_info_i(trans_info_lo)
++     ,.trans_info_i(trans_info_cast_o)
+      ,.replay_pending_o(replay_pending_o)
+      );
+ 
+@@ -452,6 +464,9 @@ module bp_be_calculator_top
+ 
+           exc_stage_n[1].exc.illegal_instr      |= pipe_sys_illegal_instr_lo;
+           exc_stage_n[1].spec.csrw              |= pipe_sys_csrw_lo;
++          // Update the stage spec `ctxtsw` to 1 if the instruction in the stage
++          // is a csrw that updated the context ID.
++          exc_stage_n[1].spec.ctxtsw            |= pipe_sys_ctxtsw_lo;
+ 
+           exc_stage_n[1].exc.dtlb_store_miss    |= pipe_mem_dtlb_store_miss_lo;
+           exc_stage_n[1].exc.dtlb_load_miss     |= pipe_mem_dtlb_load_miss_lo;
+diff --git a/bp_be/src/v/bp_be_calculator/bp_be_csr.sv b/bp_be/src/v/bp_be_calculator/bp_be_csr.sv
+index 6c73cbd7..6fd7c42f 100644
+--- a/bp_be/src/v/bp_be_calculator/bp_be_csr.sv
++++ b/bp_be/src/v/bp_be_calculator/bp_be_csr.sv
+@@ -14,8 +14,11 @@ module bp_be_csr
+ 
+    , localparam commit_pkt_width_lp = `bp_be_commit_pkt_width(vaddr_width_p, paddr_width_p)
+    , localparam decode_info_width_lp = `bp_be_decode_info_width
+-   , localparam trans_info_width_lp = `bp_be_trans_info_width(ptag_width_p)
++   , localparam trans_info_width_lp = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
+    , localparam retire_pkt_width_lp = `bp_be_retire_pkt_width(vaddr_width_p)
++   // `ctxt_id` is a parameter that is initialized in bp_be_csr_wrapper.sv when
++   // the CSR register file is created.
++   , parameter  ctxt_id             = 0
+    )
+   (input                                     clk_i
+    , input                                   reset_i
+@@ -28,6 +31,7 @@ module bp_be_csr
+    , output logic [dword_width_gp-1:0]       csr_data_o
+    , output logic                            csr_illegal_instr_o
+    , output logic                            csr_csrw_o
++   , output logic                            csr_ctxtsw_o
+ 
+    // Misc interface
+    , input [retire_pkt_width_lp-1:0]         retire_pkt_i
+@@ -233,6 +237,7 @@ module bp_be_csr
+       endcase
+     end
+ 
++  // `apc_n` is the next PC (NPC). `apc_r` is the current PC.
+   logic [vaddr_width_p-1:0] apc_n, apc_r;
+   bsg_dff_reset
+    #(.width_p(vaddr_width_p), .reset_val_p($unsigned(boot_pc_p)))
+@@ -243,6 +248,36 @@ module bp_be_csr
+      ,.data_i(apc_n)
+      ,.data_o(apc_r)
+      );
++
++  // The value for `apc_n` (which is the next PC (NPC)), it set in this order:
++  //
++  // 1. If an `sret` instruction is issued, set the NPC to the value in the SEPC
++  //    CSR. This register contains the virtual address of the instruction that
++  //    triggered an exception or that was interrupted by an interrupts.
++  //    Software can also write an address to this register.
++  //
++  // 2. If an `mret` instruction is issued, set the NPC to the value in the MEPC
++  //    CSR. This register contains the virtual address of the instruction that
++  //    triggered an exception or that was interrupted by an interrupts.
++  //    Software can also write an address to this register.
++  //
++  // 3. If a `dret` instruction is issued, set the NPC to the value in the DPC
++  //    CSR.
++  //
++  // 4. If an exception or interrupt is received, then check the privilege mode:
++  //    (1) If the hart is in supervisor mode, set the PC to the base of the
++  //        `stvec` register, which contains the address of the first
++  //        instruction in the supervisor trap handler.
++  //    (2) If the hart is in machine mode, set the PC to the base of the
++  //        `mtvec` register, which contains the address of the first
++  //        instruction in the machine trap handler.
++  //
++  // 5. If the previous instruction did *not* generate an exception, set the NPC
++  //    to the next PC.
++  //
++  // 6. If the previous instruction did generate an exception, set the NPC to
++  //    the current PC. I have not yet looked at the exception path to see how
++  //    everything works...
+   assign apc_n = retire_pkt_cast_i.special.sret ? sepc_lo : retire_pkt_cast_i.special.mret ? mepc_lo : retire_pkt_cast_i.special.dret ? dpc_lo
+                  : (exception_v_lo | interrupt_v_lo)
+                    ? ((priv_mode_n == `PRIV_MODE_S) ? {stvec_lo.base, 2'b00} : {mtvec_lo.base, 2'b00})
+@@ -263,6 +298,10 @@ module bp_be_csr
+      ,.data_o(debug_mode_r)
+      );
+ 
++  // `translation_en_n` is 1 when virtual address translation is on. Virtual
++  // address translation is on when we are *not* in machine mode (i.e., we are
++  // in kernel mode or user mode) and the SATP CSR has its mode bits set to 8
++  // (which indicates that we are using Sv39 virtual address translation).
+   assign translation_en_n = ((priv_mode_n < `PRIV_MODE_M) & (satp_li.mode == 4'd8));
+   bsg_dff_reset
+    #(.width_p(3), .reset_val_p({1'b1, `PRIV_MODE_M}))
+@@ -354,6 +393,7 @@ module bp_be_csr
+ 
+       csr_illegal_instr_o  = '0;
+       csr_csrw_o           = '0;
++      csr_ctxtsw_o         = '0;
+       csr_data_lo          = '0;
+ 
+       // Accumulate FFLAGS
+@@ -415,6 +455,9 @@ module bp_be_csr
+                 {1'b1, `CSR_ADDR_MIMPID       }: csr_data_lo = 64'd1;
+                 {1'b1, `CSR_ADDR_MHARTID      }: csr_data_lo = cfg_bus_cast_i.core_id;
+                 {1'b1, `CSR_ADDR_MSTATUS      }: csr_data_lo = mstatus_lo;
++                // Reminder: `ctxt_id` is a parameter that is initialized in
++                // bp_be_csr_wrapper.sv when the CSR register file is created.
++                {1'b1, `CSR_ADDR_CTXT         }: csr_data_lo = ctxt_id;  
+                 // MISA is optionally read-write, but all fields are read-only in BlackParrot
+                 //   64 bit MXLEN, IMAFDSU extensions
+                 {1'b1, `CSR_ADDR_MISA         }: csr_data_lo = {2'b10, 36'b0, 26'h141129};
+@@ -466,6 +509,9 @@ module bp_be_csr
+                 {1'b1, `CSR_ADDR_MIMPID       }: begin end
+                 {1'b1, `CSR_ADDR_MHARTID      }: begin end
+                 {1'b1, `CSR_ADDR_MSTATUS      }: begin mstatus_li = csr_data_li; csr_csrw_o = 1'b1; end
++                // On a write to the CTXT CSR, we output the new context ID so
++                // that we can use it when it retires.
++                {1'b1, `CSR_ADDR_CTXT         }: begin csr_data_lo = csr_cmd_cast_i.data; csr_ctxtsw_o = 1'b1; end
+                 {1'b1, `CSR_ADDR_MISA         }: begin end
+                 {1'b1, `CSR_ADDR_MEDELEG      }: medeleg_li = csr_data_li;
+                 {1'b1, `CSR_ADDR_MIDELEG      }: mideleg_li = csr_data_li;
+@@ -621,11 +667,29 @@ module bp_be_csr
+   assign commit_pkt_cast_o.instret          = retire_pkt_cast_i.instret;
+   assign commit_pkt_cast_o.pc               = apc_r;
+   assign commit_pkt_cast_o.npc              = apc_n;
++  assign commit_pkt_cast_o.npc_next_context = '0;
+   assign commit_pkt_cast_o.vaddr            = retire_pkt_cast_i.vaddr;
+   assign commit_pkt_cast_o.instr            = retire_pkt_cast_i.instr;
++  // `csr_data_lo` is ultimately stored into `comp_stage_n[1].rd_data` in
++  // `bp_be_calculator_top.sv`. `comp_stage_n` is fed into a flip-flop which
++  // then outputs the bits into `comp_stage_r`. `comp_stage_r` is then shifted 1
++  // stage to the right each cycle, since data flows through 1 stage in the
++  // pipeline each cycle. Thus, the `csr_data_lo` value is now in
++  // `comp_state_r[2].data`, which is passed to the `retire_data_i` input
++  // property of the `bp_be_pipe_sys` module in `bp_be_pipe_sys.sv`. That module
++  // constructs `retire_pkt` and sets `retire_data_i` as the `data` property of
++  // `retire_pkt`. The `bp_be_pipe_sys` module then passes `retire_pkt` to the
++  // `retire_pkt_i` input property of the `csr_wrapper` module, which passes it
++  // as to the `retire_pkt_i` input property of this module (after selecting the
++  // correct CSR file depending on the currently active context).
++  // `retire_pkt_cast_i` is a cast of the raw input property to a struct, and we
++  // access the `data` member of the struct below.
+   assign commit_pkt_cast_o.pte_leaf         = retire_pkt_cast_i.data;
+   assign commit_pkt_cast_o.priv_n           = priv_mode_n;
+   assign commit_pkt_cast_o.translation_en_n = translation_en_n;
++  assign commit_pkt_cast_o.translation_en_n_next_context = 0;
++  assign commit_pkt_cast_o.priv_n_next_context           = '0;
++  assign commit_pkt_cast_o.asid_next_context             = satp_lo.asid;
+   assign commit_pkt_cast_o.exception        = exception_v_lo;
+   assign commit_pkt_cast_o._interrupt       = interrupt_v_lo;
+   assign commit_pkt_cast_o.fencei           = retire_pkt_cast_i.special.fencei_clean;
+@@ -633,6 +697,7 @@ module bp_be_csr
+   assign commit_pkt_cast_o.wfi              = retire_pkt_cast_i.special.wfi;
+   assign commit_pkt_cast_o.eret             = |{retire_pkt_cast_i.special.dret, retire_pkt_cast_i.special.mret, retire_pkt_cast_i.special.sret};
+   assign commit_pkt_cast_o.csrw             = retire_pkt_cast_i.special.csrw;
++  assign commit_pkt_cast_o.ctxtsw           = retire_pkt_cast_i.special.ctxtsw;
+   assign commit_pkt_cast_o.itlb_miss        = retire_pkt_cast_i.exception.itlb_miss;
+   assign commit_pkt_cast_o.icache_miss      = retire_pkt_cast_i.exception.icache_miss;
+   assign commit_pkt_cast_o.dtlb_store_miss  = retire_pkt_cast_i.exception.dtlb_store_miss;
+@@ -643,6 +708,7 @@ module bp_be_csr
+   assign commit_pkt_cast_o.rollback         = |retire_pkt_cast_i.exception;
+ 
+   assign trans_info_cast_o.priv_mode = priv_mode_r;
++  assign trans_info_cast_o.satp_asid = satp_lo.asid;
+   assign trans_info_cast_o.satp_ppn  = satp_lo.ppn;
+   assign trans_info_cast_o.translation_en = translation_en_r
+     | ((~is_debug_mode | dcsr_lo.mprven) & mstatus_lo.mprv & (mstatus_lo.mpp < `PRIV_MODE_M) & (satp_lo.mode == 4'd8));
+diff --git a/bp_be/src/v/bp_be_calculator/bp_be_csr_wrapper.sv b/bp_be/src/v/bp_be_calculator/bp_be_csr_wrapper.sv
+new file mode 100644
+index 00000000..691683f7
+--- /dev/null
++++ b/bp_be/src/v/bp_be_calculator/bp_be_csr_wrapper.sv
+@@ -0,0 +1,219 @@
++/**
++ *
++ * Name:
++ *   bp_be_csr_wrapper.v
++ *
++ * Description:
++ *   A wrapper around the CSR registers. Each context has its own copy of the
++ *   CSR registers. However, the ID of the context currently running on the hart
++ *   is also stored in a CSR (ctxt at 0x081) and accessed via csrr/csrw. There
++ *   should only be one ctxt register regardless of the number of contexts.
++ *   Thus, we have this wrapper since the wrapper holds the single ctxt CSR and
++ *   forwards requests for other CSRs to the CSR register file that corresponds
++ *   to the currently running context.
++ */
++`include "bp_common_defines.svh"
++`include "bp_be_defines.svh"
++
++module bp_be_csr_wrapper
++ import bp_common_pkg::*;
++ import bp_be_pkg::*;
++
++ // The beginning of this wrapper is essentially the same as the beginning of
++ // bp_be_csr.sv. We need to have the same localparameters and module interface
++ // as the CSR register file itself.
++ #(parameter bp_params_e bp_params_p = e_bp_default_cfg
++   `declare_bp_proc_params(bp_params_p)
++
++   , localparam csr_cmd_width_lp = $bits(bp_be_csr_cmd_s)
++
++   , localparam cfg_bus_width_lp = `bp_cfg_bus_width(hio_width_p, core_id_width_p, cce_id_width_p, lce_id_width_p)
++
++   , localparam commit_pkt_width_lp = `bp_be_commit_pkt_width(vaddr_width_p, paddr_width_p)
++   , localparam decode_info_width_lp = `bp_be_decode_info_width
++   , localparam trans_info_width_lp = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
++   , localparam retire_pkt_width_lp = `bp_be_retire_pkt_width(vaddr_width_p)
++   )
++  (input                                     clk_i
++   , input                                   reset_i
++
++   , input [cfg_bus_width_lp-1:0]            cfg_bus_i
++
++   // CSR instruction interface
++   , input [csr_cmd_width_lp-1:0]            csr_cmd_i
++   , input                                   csr_cmd_v_i
++   , output logic [dword_width_gp-1:0]       csr_data_o
++   , output logic                            csr_illegal_instr_o
++   , output logic                            csr_csrw_o
++   , output logic                            csr_ctxtsw_o
++
++   // Misc interface
++   , input [retire_pkt_width_lp-1:0]         retire_pkt_i
++   , input rv64_fflags_s                     fflags_acc_i
++   , input                                   frf_w_v_i
++
++   // Interrupts
++   , input                                   timer_irq_i
++   , input                                   software_irq_i
++   , input                                   external_irq_i
++   , output logic                            irq_pending_o
++   , output logic                            irq_waiting_o
++
++   // The final commit packet
++   , output logic [commit_pkt_width_lp-1:0]  commit_pkt_o
++
++   // Slow signals
++   , output logic [decode_info_width_lp-1:0] decode_info_o
++   , output logic [trans_info_width_lp-1:0]  trans_info_o
++   , output rv64_frm_e                       frm_dyn_o
++   // `curr_ctxt_o` is the output read from the ctxt CSR.
++   // TODO: Shouldn't this be dword_width_gp-1:0 (or whatever the width of the
++   // max number of contexts is in bits, e.g., $bits(multithread_p)-1:0)?
++   , output logic [multithread_p-1:0]        curr_ctxt_o
++   );
++  
++  // Declare parameterizable structs
++  `declare_bp_cfg_bus_s(hio_width_p, core_id_width_p, cce_id_width_p, lce_id_width_p);
++  `declare_bp_be_internal_if_structs(vaddr_width_p, paddr_width_p, asid_width_p, branch_metadata_fwd_width_p);
++
++  //`declare_csr_structs(vaddr_width_p, paddr_width_p);
++  //`bp_cast_i(bp_cfg_bus_s, cfg_bus);
++  //`bp_cast_i(bp_be_csr_cmd_s, csr_cmd);
++  `bp_cast_i(bp_be_retire_pkt_s, retire_pkt);
++  `bp_cast_o(bp_be_commit_pkt_s, commit_pkt);
++  //bp_be_retire_pkt_s retire_pkt_temp_i;
++  //assign retire_pkt_temp_i = retire_pkt_i;
++  
++  /* CONTEXT REGISTER */
++  // This is a 32-bit flip-flop.
++  // TODO: Why not use `declare_csr()? I guess I need to look into
++  // `retire_pkt_cast_i.special.ctxtsw` and `retire_pkt_cast_i.data[31:0]` since
++  // `declare_csr() expects the input and output to have specific names.
++  bsg_dff_reset_en
++   // TODO: Shouldn't the width be dword_width_gp?
++   #(.width_p(32)
++    ,.reset_val_p(0            )) // reset to ctxt 0
++   ctxt_reg
++    (.clk_i(clk_i)
++     ,.reset_i(reset_i)
++     // Raise `en_i` if the flip-flop should update its output.
++     // `retire_pkt_cast_i.special.ctxtsw` is only a 1 when a csrw is issued for
++     // the ctxt CSR register. We only update the CTXT CSR register value when
++     // the instruction is at the end of the pipeline and retires.
++     ,.en_i(retire_pkt_cast_i.special.ctxtsw)
++     // The input to the flip-flop is the context ID that the last instruction
++     // wrote, if the last instruction was a csrw for the CTXT CSR
++     // (`retire_pkt_cast_i.special.ctxtsw` is 1 if so, 0 if not).
++     // TODO: Why do we need [31:0] at all instead of just
++     // `retire_pkt_cast_i.data`? Also, should we have `[dpath_width_gp-1:0]`
++     // instead (as in bp_be/src/include/bp_be_defines.svh)?
++     ,.data_i(retire_pkt_cast_i.data[31:0])
++     // The output of the flip-flop.
++     ,.data_o(curr_ctxt_o)
++    );
++
++  // Similar to how we duplicated the register files so we have one per context,
++  // we are duplicating the CSR files here so that there is one per context.
++  // Note that each wire is a two-dimensional array where there is one entry per
++  // context (multithread_p-1:0).
++  logic [multithread_p-1:0][dword_width_gp-1:0]   csr_data_co;
++  logic [multithread_p-1:0][commit_pkt_width_lp-1:0]  commit_pkt_co;
++  logic [multithread_p-1:0][decode_info_width_lp-1:0] decode_info_co;
++  logic [multithread_p-1:0][trans_info_width_lp-1:0]  trans_info_co;
++  logic [multithread_p-1:0][retire_pkt_width_lp-1:0]  retire_pkt_ci;
++  rv64_fflags_s [multithread_p-1:0]                   fflags_acc_ci;
++  rv64_frm_e    [multithread_p-1:0]                   frm_dyn_co;
++  logic [multithread_p-1:0] csr_cmd_v_ci, csr_illegal_instr_co, csr_csrw_co, csr_ctxtsw_co, timer_irq_ci, software_irq_ci, external_irq_ci, irq_pending_co, irq_waiting_co, frf_w_v_ci;
++
++  bp_be_commit_pkt_s next_commit_pkt_cast;
++
++  always_comb begin
++    // Similar to how we handle the register files, we need to set each wire to
++    // 0 in case the software set the context ID to an invalid ID. In that case,
++    // the for loop will never fill in this wires, so we need to make sure they
++    // are driven to 0.
++    csr_data_o = csr_data_co[curr_ctxt_o]; 
++    csr_illegal_instr_o = csr_illegal_instr_co[curr_ctxt_o];
++    csr_csrw_o = csr_csrw_co[curr_ctxt_o];
++    csr_ctxtsw_o = csr_ctxtsw_co[curr_ctxt_o]; 
++    irq_pending_o = irq_pending_co[curr_ctxt_o];
++    irq_waiting_o = irq_waiting_co[curr_ctxt_o]; 
++    commit_pkt_cast_o = commit_pkt_co[curr_ctxt_o];
++    decode_info_o = decode_info_co[curr_ctxt_o];
++    trans_info_o = trans_info_co[curr_ctxt_o];
++    frm_dyn_o = frm_dyn_co[curr_ctxt_o];
++    csr_cmd_v_ci = 0;
++    timer_irq_ci = 0;
++    software_irq_ci = 0;
++    external_irq_ci = 0;
++    fflags_acc_ci = 0; 
++    frf_w_v_ci = 0;
++    retire_pkt_ci = 0; 
++    csr_cmd_v_ci[curr_ctxt_o] = csr_cmd_v_i;
++    timer_irq_ci[curr_ctxt_o] = timer_irq_i;
++    software_irq_ci[curr_ctxt_o] = software_irq_i;
++    external_irq_ci[curr_ctxt_o] = external_irq_i;
++    fflags_acc_ci[curr_ctxt_o] = fflags_acc_i; 
++    frf_w_v_ci[curr_ctxt_o] = frf_w_v_i; 
++    retire_pkt_ci[curr_ctxt_o] = retire_pkt_i; 
++
++    // Make sure to set `next_commit_pkt` to zeroes on reset. Otherwise, we may
++    // end up accessing an invalid index in `commit_pkt_co` which could cause
++    // the design to hang.
++    //next_commit_pkt = (!reset_i && retire_pkt_cast_i.special.ctxtsw) ? commit_pkt_co[retire_pkt_cast_i.data[31:0]] : '0;
++    next_commit_pkt_cast = (!reset_i && retire_pkt_cast_i.special.ctxtsw) ? commit_pkt_co[retire_pkt_cast_i.data[31:0]] : '0;
++    commit_pkt_cast_o.npc_next_context              = next_commit_pkt_cast.npc;
++    commit_pkt_cast_o.translation_en_n_next_context = next_commit_pkt_cast.translation_en_n;
++    commit_pkt_cast_o.priv_n_next_context           = next_commit_pkt_cast.priv_n;
++    commit_pkt_cast_o.asid_next_context             = next_commit_pkt_cast.asid_next_context;
++  end
++
++  // Generate on CSR file per context.
++  genvar i;
++  generate 
++  for (i = 0; i < multithread_p; i++) begin: gen_csr
++    // TODO: I noticed that `gen_csr` is directly accessible from `csr_wrapper`
++    // in bp_top/test/tb/bp_tethered/testbench.sv. Do we not need to explicitly
++    // mark `gen_csr` as an output?
++    bp_be_csr
++      // Pass the context ID to `ctxt_id`.
++      #(.bp_params_p(bp_params_p), .ctxt_id(i))
++    csr
++      (.clk_i(clk_i)
++      ,.reset_i(reset_i)
++
++      ,.cfg_bus_i(cfg_bus_i)
++
++      // TODO: This was `csr_cmd_li` before it was changed to `csr_cmd_i` in
++      // commit 1eba80ee0d6f1fb3bfcbf2809f5c8f684935f55e. I assume `csr_cmd_li`
++      // was just a typo that unfortunately matched the name of a wire
++      // elsewhere? Is that all that commit was fixing or is there anything else
++      // to know?
++      ,.csr_cmd_i(csr_cmd_i)
++
++      // For all of the inputs below, we are passing the index corresponding to
++      // this context to the two-dimensional arrays.
++      ,.csr_cmd_v_i(csr_cmd_v_ci[i])
++      ,.csr_data_o(csr_data_co[i])
++      ,.csr_illegal_instr_o(csr_illegal_instr_co[i])
++      ,.csr_csrw_o(csr_csrw_co[i])
++      ,.csr_ctxtsw_o(csr_ctxtsw_co[i])
++
++      ,.fflags_acc_i(fflags_acc_ci[i])
++      ,.frf_w_v_i(frf_w_v_ci[i])
++
++      ,.timer_irq_i(timer_irq_ci[i])
++      ,.software_irq_i(software_irq_ci[i])
++      ,.external_irq_i(external_irq_ci[i])
++      ,.irq_pending_o(irq_pending_co[i])
++      ,.irq_waiting_o(irq_waiting_co[i])
++
++      ,.retire_pkt_i(retire_pkt_ci[i])
++      ,.commit_pkt_o(commit_pkt_co[i])
++      ,.decode_info_o(decode_info_co[i])
++      ,.trans_info_o(trans_info_co[i])
++      ,.frm_dyn_o(frm_dyn_co[i])
++     );
++  end
++  endgenerate 
++endmodule 
+diff --git a/bp_be/src/v/bp_be_calculator/bp_be_pipe_mem.sv b/bp_be/src/v/bp_be_calculator/bp_be_pipe_mem.sv
+index 5b945072..eea50ef0 100644
+--- a/bp_be/src/v/bp_be_calculator/bp_be_pipe_mem.sv
++++ b/bp_be/src/v/bp_be_calculator/bp_be_pipe_mem.sv
+@@ -23,7 +23,7 @@ module bp_be_pipe_mem
+    , localparam cfg_bus_width_lp       = `bp_cfg_bus_width(hio_width_p, core_id_width_p, cce_id_width_p, lce_id_width_p)
+    , localparam dispatch_pkt_width_lp  = `bp_be_dispatch_pkt_width(vaddr_width_p)
+    , localparam ptw_fill_pkt_width_lp  = `bp_be_ptw_fill_pkt_width(vaddr_width_p, paddr_width_p)
+-   , localparam trans_info_width_lp    = `bp_be_trans_info_width(ptag_width_p)
++   , localparam trans_info_width_lp    = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
+    , localparam commit_pkt_width_lp    = `bp_be_commit_pkt_width(vaddr_width_p, paddr_width_p)
+    )
+   (input                                  clk_i
+@@ -194,6 +194,8 @@ module bp_be_pipe_mem
+      ,.r_store_i(is_store)
+      ,.r_eaddr_i(eaddr)
+ 
++     ,.asid_i(trans_info.satp_asid)
++
+      ,.r_v_o(dtlb_v_lo)
+      ,.r_ptag_o(dtlb_ptag_lo)
+      ,.r_miss_o(dtlb_miss_v)
+diff --git a/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.sv b/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.sv
+index 67ac1a93..9a949a3b 100644
+--- a/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.sv
++++ b/bp_be/src/v/bp_be_calculator/bp_be_pipe_sys.sv
+@@ -25,7 +25,7 @@ module bp_be_pipe_sys
+    , localparam special_width_lp      = $bits(bp_be_special_s)
+    , localparam commit_pkt_width_lp   = `bp_be_commit_pkt_width(vaddr_width_p, paddr_width_p)
+    , localparam decode_info_width_lp  = `bp_be_decode_info_width
+-   , localparam trans_info_width_lp   = `bp_be_trans_info_width(ptag_width_p)
++   , localparam trans_info_width_lp   = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
+    , localparam wb_pkt_width_lp       = `bp_be_wb_pkt_width(vaddr_width_p)
+    )
+   (input                                     clk_i
+@@ -44,6 +44,8 @@ module bp_be_pipe_sys
+ 
+    , output logic [dpath_width_gp-1:0]       data_o
+    , output logic                            csrw_o
++   // `ctxtsw_o` is set to 1 when the instruction updates the context ID CSR.
++   , output logic                            ctxtsw_o
+    , output logic                            illegal_instr_o
+    , output logic                            v_o
+ 
+@@ -60,6 +62,9 @@ module bp_be_pipe_sys
+    , output logic [decode_info_width_lp-1:0] decode_info_o
+    , output logic [trans_info_width_lp-1:0]  trans_info_o
+    , output rv64_frm_e                       frm_dyn_o
++     // The ID of the context that is currently running on the hart.
++     // TODO: Should we update the width of the wire?
++   , output logic [multithread_p-1:0]        curr_ctxt_o
+    );
+ 
+   `declare_bp_be_internal_if_structs(vaddr_width_p, paddr_width_p, asid_width_p, branch_metadata_fwd_width_p);
+@@ -99,9 +104,9 @@ module bp_be_pipe_sys
+ 
+   bp_be_retire_pkt_s retire_pkt;
+   logic [dword_width_gp-1:0] csr_data_lo;
+-  bp_be_csr
++  bp_be_csr_wrapper
+    #(.bp_params_p(bp_params_p))
+-    csr
++    csr_wrapper
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
+ 
+@@ -112,6 +117,7 @@ module bp_be_pipe_sys
+      ,.csr_data_o(csr_data_lo)
+      ,.csr_illegal_instr_o(illegal_instr_o)
+      ,.csr_csrw_o(csrw_o)
++     ,.csr_ctxtsw_o(ctxtsw_o)
+ 
+      ,.fflags_acc_i(({5{iwb_pkt.fflags_w_v}} & iwb_pkt.fflags) | ({5{fwb_pkt.fflags_w_v}} & fwb_pkt.fflags))
+      ,.frf_w_v_i(fwb_pkt.frd_w_v)
+@@ -127,6 +133,7 @@ module bp_be_pipe_sys
+      ,.decode_info_o(decode_info)
+      ,.trans_info_o(trans_info)
+      ,.frm_dyn_o(frm_dyn_o)
++     ,.curr_ctxt_o(curr_ctxt_o)
+      );
+   wire sys_v_li = reservation.v & reservation.decode.pipe_sys_v;
+   assign data_o = csr_data_lo;
+diff --git a/bp_be/src/v/bp_be_checker/bp_be_director.sv b/bp_be/src/v/bp_be_checker/bp_be_director.sv
+index 2a4d7779..df791ed2 100644
+--- a/bp_be/src/v/bp_be_checker/bp_be_director.sv
++++ b/bp_be/src/v/bp_be_checker/bp_be_director.sv
+@@ -26,6 +26,7 @@ module bp_be_director
+    , localparam isd_status_width_lp = `bp_be_isd_status_width(vaddr_width_p, branch_metadata_fwd_width_p)
+    , localparam branch_pkt_width_lp = `bp_be_branch_pkt_width(vaddr_width_p)
+    , localparam commit_pkt_width_lp = `bp_be_commit_pkt_width(vaddr_width_p, paddr_width_p)
++   , localparam trans_info_width_lp = `bp_be_trans_info_width(asid_width_p, ptag_width_p)
+    )
+   (input                                clk_i
+    , input                              reset_i
+@@ -49,6 +50,11 @@ module bp_be_director
+ 
+    , input [branch_pkt_width_lp-1:0]    br_pkt_i
+    , input [commit_pkt_width_lp-1:0]    commit_pkt_i
++   , input [trans_info_width_lp-1:0]    trans_info_i
++
++     // The ID of the context that is currently running on the hart.
++     // TODO: Should we update the width of the wire?
++   , input [multithread_p-1:0]          curr_ctxt_i
+    );
+ 
+   // Declare parameterized structures
+@@ -56,10 +62,13 @@ module bp_be_director
+   `declare_bp_core_if(vaddr_width_p, paddr_width_p, asid_width_p, branch_metadata_fwd_width_p);
+   `declare_bp_be_internal_if_structs(vaddr_width_p, paddr_width_p, asid_width_p, branch_metadata_fwd_width_p);
+ 
++  // The *_pkt_cast_i variables (e.g., `commit_pkt_cast_i`) are declared below
++  // with macros.
+   `bp_cast_i(bp_cfg_bus_s, cfg_bus);
+   `bp_cast_i(bp_be_isd_status_s, isd_status);
+   `bp_cast_i(bp_be_branch_pkt_s, br_pkt);
+   `bp_cast_i(bp_be_commit_pkt_s, commit_pkt);
++  `bp_cast_i(bp_be_trans_info_s, trans_info);
+ 
+   // Cast input and output ports
+   bp_fe_cmd_s                      fe_cmd_li;
+@@ -67,9 +76,10 @@ module bp_be_director
+   bp_fe_cmd_pc_redirect_operands_s fe_cmd_pc_redirect_operands;
+ 
+   // Declare intermediate signals
+-  logic [vaddr_width_p-1:0]               npc_plus4;
+-  logic [vaddr_width_p-1:0]               npc_n, npc_r, pc_r;
+-  logic                                   npc_mismatch_v;
++  logic [vaddr_width_p-1:0]                    npc_plus4;
++  // One copy per context (multithread_p-1:0).
++  logic [multithread_p-1:0][vaddr_width_p-1:0] npc_n, npc_r, pc_r;
++  logic                                        npc_mismatch_v;
+ 
+   enum logic [2:0] {e_reset, e_boot, e_run, e_fence, e_wait} state_n, state_r;
+   wire is_reset = (state_r == e_reset);
+@@ -79,19 +89,43 @@ module bp_be_director
+ 
+   // Module instantiations
+   // Update the NPC on a valid instruction in ex1 or upon commit
+-  wire npc_w_v = commit_pkt_cast_i.npc_w_v | br_pkt_cast_i.v;
+-  assign npc_n = commit_pkt_cast_i.npc_w_v ? commit_pkt_cast_i.npc : br_pkt_cast_i.npc;
+-  bsg_dff_reset_en
+-   #(.width_p(vaddr_width_p), .reset_val_p($unsigned(boot_pc_p)))
+-   npc
+-    (.clk_i(clk_i)
+-     ,.reset_i(reset_i)
+-     ,.en_i(npc_w_v)
+-
+-     ,.data_i(npc_n)
+-     ,.data_o(npc_r)
+-     );
+-  assign expected_npc_o = npc_w_v ? npc_n : npc_r;
++  logic [multithread_p-1:0] npc_w_v;
++  
++  // Just like the register files and the CSR register files, we have one NPC
++  // per context. NPC is the speculative Next PC. The NPC is the real PC whereas
++  // the PC in the frontend is just speculative. When the frontend PC is
++  // incorrect, we flush the incorrect instructions and send a message to the
++  // frontend with the correct PC.
++  // TODO: How does this work exactly? How do we know that `commit_pkt_cast_i`
++  // is for an instruction in this context? If there is a misprediction, how do
++  // we know which context the misprediction was for?
++  always_comb begin
++    npc_w_v = 0; 
++    npc_n = 0;
++    for (int i = 0; i < multithread_p; i++) begin
++      if (i == curr_ctxt_i) begin
++        npc_w_v[i] = commit_pkt_cast_i.npc_w_v | br_pkt_cast_i.v; 
++        npc_n[i] = commit_pkt_cast_i.npc_w_v ? commit_pkt_cast_i.npc : br_pkt_cast_i.npc; 
++      end
++    end
++  end
++  genvar i;
++  generate 
++  for (i = 0; i < multithread_p; i++) begin: gen_npc
++    bsg_dff_reset_en
++      #(.width_p(vaddr_width_p), .reset_val_p($unsigned(boot_pc_p)))
++    npc
++      (.clk_i(clk_i)
++      ,.reset_i(reset_i)
++      ,.en_i(npc_w_v[i])
++
++      ,.data_i(npc_n[i])
++      ,.data_o(npc_r[i])
++      );
++  end 
++  endgenerate
++
++  assign expected_npc_o = npc_w_v[curr_ctxt_i] ? npc_n[curr_ctxt_i] : npc_r[curr_ctxt_i];
+ 
+   assign npc_mismatch_v = isd_status_cast_i.v & (expected_npc_o != isd_status_cast_i.pc);
+   assign poison_isd_o = commit_pkt_cast_i.npc_w_v | npc_mismatch_v;
+@@ -186,6 +220,38 @@ module bp_be_director
+           fe_cmd_li.vaddr                             = commit_pkt_cast_i.npc;
+           fe_cmd_pc_redirect_operands.subopcode       = e_subop_translation_switch;
+           fe_cmd_pc_redirect_operands.translation_en  = commit_pkt_cast_i.translation_en_n;
++          // This message is sent when there is a write to the SATP CSR (`csrw`
++          // is 1 when there is a write to the SATP CSR). Send the ASID
++          // currently in the SATP CSR so that the frontend iTLB can control
++          // access accordingly.
++          fe_cmd_pc_redirect_operands.asid            = trans_info_cast_i.satp_asid;
++          fe_cmd_li.operands.pc_redirect_operands     = fe_cmd_pc_redirect_operands;
++
++          fe_cmd_v_li = fe_cmd_ready_lo;
++        end
++      // When the CTXT CSR is updated, we set `ctxtsw` to 1. Note that we do
++      // *not* set `csrw` to 1 in this case, so we do not need to worry about
++      // going into the `else if` body immediately above.
++      else if (commit_pkt_cast_i.ctxtsw)
++        begin
++          fe_cmd_pc_redirect_operands = '0;
++
++          fe_cmd_li.opcode                            = e_op_context_switch;
++          // `commit_pkt_cast_i.pte_leaf` contains the ID of the context
++          // currently running. We use the `vaddr` field to send this context ID
++          // to the frontend rather than waste space on adding a new field to
++          // the fe. When the frontend receives a command of type
++          // `e_subop_context_switch`, it knows to interpret the `vaddr` field
++          // contents as the context ID and switch to the correct PC
++          // accordingly.
++          fe_cmd_li.vaddr                             = commit_pkt_cast_i.npc_next_context;
++
++          // Is this the right opcode for all situations?
++          fe_cmd_pc_redirect_operands.subopcode       = e_subop_context_switch;
++          fe_cmd_pc_redirect_operands.translation_en  = commit_pkt_cast_i.translation_en_n_next_context;
++          fe_cmd_pc_redirect_operands.priv            = commit_pkt_cast_i.priv_n_next_context;
++          fe_cmd_pc_redirect_operands.asid            = commit_pkt_cast_i.asid_next_context;
++          fe_cmd_pc_redirect_operands.ctxt_id         = commit_pkt_cast_i.pte_leaf;
+           fe_cmd_li.operands.pc_redirect_operands     = fe_cmd_pc_redirect_operands;
+ 
+           fe_cmd_v_li = fe_cmd_ready_lo;
+diff --git a/bp_be/src/v/bp_be_checker/bp_be_scheduler.sv b/bp_be/src/v/bp_be_checker/bp_be_scheduler.sv
+index 718331cc..a6aad772 100644
+--- a/bp_be/src/v/bp_be_checker/bp_be_scheduler.sv
++++ b/bp_be/src/v/bp_be_checker/bp_be_scheduler.sv
+@@ -54,6 +54,8 @@ module bp_be_scheduler
+   , input [wb_pkt_width_lp-1:0]        iwb_pkt_i
+   , input [wb_pkt_width_lp-1:0]        fwb_pkt_i
+   , input [ptw_fill_pkt_width_lp-1:0]  ptw_fill_pkt_i
++  // The ID of the current context that is running on this hart.
++  , input [multithread_p-1:0]          curr_ctxt_i
+   );
+ 
+   // Declare parameterizable structures
+@@ -95,37 +97,114 @@ module bp_be_scheduler
+      ,.issue_pkt_o(issue_pkt)
+      );
+ 
++  // We read the contents of the registers for the current context and store the
++  // contents in `irf_rs1` and `irf_rs2`.
++  // rs1 and rs2 are the registers than an instruction wants to read.
+   logic [dword_width_gp-1:0] irf_rs1, irf_rs2;
+-  bp_be_regfile
+-  #(.bp_params_p(bp_params_p), .read_ports_p(2), .zero_x0_p(1), .data_width_p(dword_width_gp))
+-   int_regfile
+-    (.clk_i(clk_i)
+-     ,.reset_i(reset_i)
+-
+-     ,.rd_w_v_i(iwb_pkt_cast_i.ird_w_v)
+-     ,.rd_addr_i(iwb_pkt_cast_i.rd_addr)
+-     ,.rd_data_i(iwb_pkt_cast_i.rd_data[0+:dword_width_gp])
+-
+-     ,.rs_r_v_i({preissue_pkt.irs2_v, preissue_pkt.irs1_v})
+-     ,.rs_addr_i({preissue_pkt.rs2_addr, preissue_pkt.rs1_addr})
+-     ,.rs_data_o({irf_rs2, irf_rs1})
+-     );
+-
+   logic [dpath_width_gp-1:0] frf_rs1, frf_rs2, frf_rs3;
+-  bp_be_regfile
+-  #(.bp_params_p(bp_params_p), .read_ports_p(3), .zero_x0_p(0), .data_width_p(dpath_width_gp))
+-   fp_regfile
+-    (.clk_i(clk_i)
+-     ,.reset_i(reset_i)
+-
+-     ,.rd_w_v_i(fwb_pkt_cast_i.frd_w_v)
+-     ,.rd_addr_i(fwb_pkt_cast_i.rd_addr)
+-     ,.rd_data_i(fwb_pkt_cast_i.rd_data)
+-
+-     ,.rs_r_v_i({preissue_pkt.frs3_v, preissue_pkt.frs2_v, preissue_pkt.frs1_v})
+-     ,.rs_addr_i({preissue_pkt.rs3_addr, preissue_pkt.rs2_addr, preissue_pkt.rs1_addr})
+-     ,.rs_data_o({frf_rs3, frf_rs2, frf_rs1})
+-     );
++  // These contain the values of the two requested registers (rs1 and rs2) from
++  // *all* register files. Notice that these are both two-dimensional arrays,
++  // where there is one row per context (multithread_p-1:0) and there is one
++  // column per bit in the word (dword_width_gp-1:0).
++  logic [multithread_p-1:0][dword_width_gp-1:0] irf_rs1_c, irf_rs2_c;
++  logic [multithread_p-1:0][dpath_width_gp-1:0] frf_rs1_c, frf_rs2_c, frf_rs3_c;
++  // I believe these are set to 1 if the register should be read/written to and
++  // set to 0 if the register should not be read/written to. There is one copy
++  // of each variable per context (multithread_p-1:0, so each context has its
++  // own `irs1_v_c`, `irs2_v_c`, and `ird_w_v_c`.
++  logic [multithread_p-1:0] irs1_v_c, irs2_v_c, ird_w_v_c;
++  logic [multithread_p-1:0] frs1_v_c, frs2_v_c, frs3_v_c, frd_w_v_c;
++  // TODO: What does `always_comb` mean exactly? Is this shorthand for detecting
++  // the rising clock edge?
++  always_comb begin
++    // We need to fill in `irs1_v_c`, `irs2_v_c`, and `ird_w_v_c`, so initialize
++    // them to 0 (so they are 0 for every context). I assume that we need to
++    // initialize these to a value, even though they are filled in by the for
++    // loop below, becuase we are not guaranteed that `curr_ctxt_i` is equal to
++    // a valid context. `curr_ctxt_i` is a value set by software and there are
++    // certain context IDs that can be set that correspond to contexts that do
++    // not exist.
++    irs1_v_c = 0;
++    irs2_v_c = 0;
++    ird_w_v_c = 0;
++
++    frs1_v_c = 0;
++    frs2_v_c = 0;
++    frs3_v_c =0;
++    frd_w_v_c = 0;
++    // Set `irf_rs1` and `irf_rs2` to the values we read from the register
++    // file. We read from the register file below, so these wires are set
++    // the cycle after we read the register file.
++    irf_rs1 = irf_rs1_c[curr_ctxt_i];
++    irf_rs2 = irf_rs2_c[curr_ctxt_i];
++
++    frf_rs1 = frf_rs1_c[curr_ctxt_i];
++    frf_rs2 = frf_rs2_c[curr_ctxt_i];
++    frf_rs3 = frf_rs3_c[curr_ctxt_i];
++    // Set these bits based on the registers that the instruction wants to
++    // read/write to (which depends on the instruction type). These bits are
++    // set just before we read the register file (but in the same cycle) and
++    // are then passed to the register file as inputs.
++    irs1_v_c[curr_ctxt_i] = preissue_pkt.irs1_v;
++    irs2_v_c[curr_ctxt_i] = preissue_pkt.irs2_v;
++    ird_w_v_c[curr_ctxt_i] = iwb_pkt_cast_i.ird_w_v;
++
++    frs1_v_c[curr_ctxt_i] = preissue_pkt.frs1_v;
++    frs2_v_c[curr_ctxt_i] = preissue_pkt.frs2_v;
++    frs3_v_c[curr_ctxt_i] = preissue_pkt.frs3_v;
++    frd_w_v_c[curr_ctxt_i] = iwb_pkt_cast_i.frd_w_v;
++  end
++
++  // I assume we are using a `genvar i` here because we want to generate
++  // `multithread_p` different register files during synthesis? Whereas above we
++  // want a for loop with an `int i` because we actually want a sort of looping
++  // logic in the design logic (which probably gets synthesized down to a mux).
++  genvar i;
++  generate 
++  // Generate `multithread_p` different register files. There is one register
++  // file per context. Maybe in the future we will have fewer register files
++  // than contexts and we can evict some contexts to the caches. But for now, we
++  // have one register file per context.
++  for (i = 0; i < multithread_p; i++) begin:gen_regfile
++    bp_be_regfile
++    #(.bp_params_p(bp_params_p), .read_ports_p(2), .zero_x0_p(1), .data_width_p(dword_width_gp))
++    int_regfile
++      (.clk_i(clk_i)
++      ,.reset_i(reset_i)
++
++      // `irs1_v_c`, `irs2_v_c`, and `ird_w_v_c` are all bit arrays because we
++      // read the register files simultaneously. We use index `i` of the bit
++      // arrays because that index corresponds to context `i`, whose register
++      // file we are reading here.
++      ,.rd_w_v_i(ird_w_v_c[i])
++      ,.rd_addr_i(iwb_pkt_cast_i.rd_addr)
++      ,.rd_data_i(iwb_pkt_cast_i.rd_data[0+:dword_width_gp])
++
++      ,.rs_r_v_i({irs2_v_c[i], irs1_v_c[i]})
++      ,.rs_addr_i({preissue_pkt.rs2_addr, preissue_pkt.rs1_addr})
++      // Similarly, `irf_rs1_c` and `irf_rs2_c` are bit arrays because we read
++      // the register files simultaneously.
++      ,.rs_data_o({irf_rs2_c[i], irf_rs1_c[i]})
++      );
++      
++
++    bp_be_regfile
++    #(.bp_params_p(bp_params_p), .read_ports_p(3), .zero_x0_p(0), .data_width_p(dpath_width_gp))
++    fp_regfile
++      (.clk_i(clk_i)
++      ,.reset_i(reset_i)
++
++      ,.rd_w_v_i(frd_w_v_c[i])
++      ,.rd_addr_i(fwb_pkt_cast_i.rd_addr)
++      ,.rd_data_i(fwb_pkt_cast_i.rd_data)
++
++      ,.rs_r_v_i({frs3_v_c[i], frs2_v_c[i], frs1_v_c[i]})
++      ,.rs_addr_i({preissue_pkt.rs3_addr, preissue_pkt.rs2_addr, preissue_pkt.rs1_addr})
++      ,.rs_data_o({frf_rs3_c[i], frf_rs2_c[i], frf_rs1_c[i]})
++      );
++  end
++  endgenerate
++  
+ 
+   // Decode the dispatched instruction
+   bp_be_decode_s instr_decoded;
+diff --git a/bp_be/src/v/bp_be_top.sv b/bp_be/src/v/bp_be_top.sv
+index 2415ef65..f95c43f4 100644
+--- a/bp_be/src/v/bp_be_top.sv
++++ b/bp_be/src/v/bp_be_top.sv
+@@ -88,6 +88,7 @@ module bp_be_top
+   bp_be_ptw_fill_pkt_s ptw_fill_pkt;
+   bp_be_wb_pkt_s iwb_pkt, fwb_pkt;
+   bp_be_decode_info_s decode_info_lo;
++  bp_be_trans_info_s trans_info;
+ 
+   bp_be_isd_status_s isd_status;
+   logic [vaddr_width_p-1:0] expected_npc_lo;
+@@ -97,6 +98,10 @@ module bp_be_top
+   logic cmd_full_n_lo, cmd_full_r_lo, cmd_empty_lo;
+   logic mem_ready_lo, long_ready_lo, ptw_busy_lo;
+ 
++  // The ID of the context that is currently running on the hart.
++  // TODO: Should we update the width of the wire?
++  logic [multithread_p-1:0] curr_ctxt;
++
+   bp_be_director
+    #(.bp_params_p(bp_params_p))
+    director
+@@ -121,6 +126,7 @@ module bp_be_top
+ 
+      ,.br_pkt_i(br_pkt)
+      ,.commit_pkt_i(commit_pkt)
++     ,.curr_ctxt_i(curr_ctxt)
+      );
+ 
+   bp_be_detector
+@@ -173,6 +179,7 @@ module bp_be_top
+      ,.ptw_fill_pkt_i(ptw_fill_pkt)
+      ,.iwb_pkt_i(iwb_pkt)
+      ,.fwb_pkt_i(fwb_pkt)
++     ,.curr_ctxt_i(curr_ctxt)
+      );
+ 
+   bp_be_calculator_top
+@@ -195,6 +202,7 @@ module bp_be_top
+      ,.ptw_fill_pkt_o(ptw_fill_pkt)
+      ,.iwb_pkt_o(iwb_pkt)
+      ,.fwb_pkt_o(fwb_pkt)
++     ,.trans_info_o(trans_info)
+ 
+      ,.cache_req_o(cache_req_o)
+      ,.cache_req_metadata_o(cache_req_metadata_o)
+@@ -230,6 +238,7 @@ module bp_be_top
+      ,.irq_waiting_o(irq_waiting_lo)
+      ,.replay_pending_o(replay_pending_lo)
+      ,.cmd_full_n_i(cmd_full_n_lo)
++     ,.curr_ctxt_o(curr_ctxt)
+      );
+ 
+ endmodule
+diff --git a/bp_be/syn/flist.vcs b/bp_be/syn/flist.vcs
+index 404fa328..1d330bbe 100644
+--- a/bp_be/syn/flist.vcs
++++ b/bp_be/syn/flist.vcs
+@@ -184,6 +184,7 @@ $BP_BE_DIR/src/v/bp_be_top.sv
+ # Calculator
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_calculator_top.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_csr.sv
++$BP_BE_DIR/src/v/bp_be_calculator/bp_be_csr_wrapper.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_fp_to_rec.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_pipe_int.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_pipe_aux.sv
+diff --git a/bp_common/src/include/bp_common_aviary_defines.svh b/bp_common/src/include/bp_common_aviary_defines.svh
+index 570e134c..667ddb26 100644
+--- a/bp_common/src/include/bp_common_aviary_defines.svh
++++ b/bp_common/src/include/bp_common_aviary_defines.svh
+@@ -162,7 +162,10 @@
+     , localparam vtag_width_p  = vaddr_width_p - page_offset_width_gp                              \
+     , localparam ptag_width_p  = paddr_width_p - page_offset_width_gp                              \
+     , localparam dtag_width_p  = daddr_width_p - page_offset_width_gp                              \
+-    , localparam ctag_width_p  = caddr_width_p - page_offset_width_gp
++    , localparam ctag_width_p  = caddr_width_p - page_offset_width_gp                              \
++    , localparam multithread_p = proc_param_lp.multithread                                         \
++    , localparam multithread_width_p = `BSG_SAFE_CLOG2(multithread_p)
++
+ 
+     `define bp_aviary_parameter_override(parameter_mp, override_cfg_mp, default_cfg_mp) \
+       parameter_mp: (override_cfg_mp.``parameter_mp`` == "inv") \
+@@ -266,6 +269,7 @@
+           ,`bp_aviary_parameter_override(io_noc_cid_width, override_cfg_mp, default_cfg_mp)        \
+           ,`bp_aviary_parameter_override(io_noc_did_width, override_cfg_mp, default_cfg_mp)        \
+           ,`bp_aviary_parameter_override(io_noc_len_width, override_cfg_mp, default_cfg_mp)        \
++          ,`bp_aviary_parameter_override(multithread, override_cfg_mp, default_cfg_mp)                \
+           }
+ 
+ `endif
+diff --git a/bp_common/src/include/bp_common_aviary_pkgdef.svh b/bp_common/src/include/bp_common_aviary_pkgdef.svh
+index 60240105..68925b72 100644
+--- a/bp_common/src/include/bp_common_aviary_pkgdef.svh
++++ b/bp_common/src/include/bp_common_aviary_pkgdef.svh
+@@ -32,6 +32,7 @@
+     // 0: BP unicore (minimal, single-core configuration)
+     // 1: BP multicore (coherent, multi-core configuration)
+     integer unsigned multicore;
++    
+ 
+     // Dimensions of the different complexes
+     // Core Complex may be any integer unsigned (though has only been validated up to 4x4)
+@@ -78,7 +79,7 @@
+     // The max size cached by the L1 caches of the system
+     integer unsigned caddr_width;
+     // Address space ID width
+-    //   Currently unused, so set to 1 bit
++    // The ASID field in the SATP CSR is 16 bits for RISCV64.
+     integer unsigned asid_width;
+ 
+     // The virtual address of the PC coming out of reset
+@@ -202,6 +203,8 @@
+     integer unsigned io_noc_len_width;
+     // Maximum credits supported by the network. Correlated to the bandwidth delay product
+     integer unsigned io_noc_max_credits;
++    
++    integer unsigned multithread;
+ 
+   }  bp_proc_param_s;
+ 
+@@ -223,7 +226,7 @@
+       ,paddr_width: 40
+       ,daddr_width: 33
+       ,caddr_width: 32
+-      ,asid_width : 1
++      ,asid_width : 16
+ 
+       ,boot_pc       : dram_base_addr_gp
+       ,boot_in_debug : 0
+@@ -235,10 +238,10 @@
+       ,bht_row_els              : 2
+       ,ghist_width              : 2
+ 
+-      ,itlb_els_4k : 8
+-      ,dtlb_els_4k : 8
+-      ,itlb_els_1g : 0
+-      ,dtlb_els_1g : 0
++      ,itlb_els_4k : 64
++      ,dtlb_els_4k : 64
++      ,itlb_els_1g : 1
++      ,dtlb_els_1g : 1
+ 
+       ,lr_sc                : e_l1
+       ,amo_swap             : e_none
+@@ -292,6 +295,8 @@
+       ,io_noc_did_width     : 3
+       ,io_noc_len_width     : 4
+       ,io_noc_max_credits   : 16
++      
++      ,multithread: 1
+       };
+ 
+   // Default configuration is unicore
+@@ -818,6 +823,17 @@
+                         ,bp_multicore_1_cce_ucode_cfg_p
+                         );
+ 
++  // The configuration for multiple contexts. By default, there are 32 contexts
++  // (32 is the number of contexts, not a bit width or anything else). Change 32
++  // to a different number to change the number of contexts.
++  localparam bp_proc_param_s bp_multicore_1_multithread_override_p =
++    '{multithread : 32
++      ,default : "inv"
++      };
++  `bp_aviary_derive_cfg(bp_multicore_1_multithread_cfg_p
++                        ,bp_multicore_1_multithread_override_p
++                        ,bp_multicore_1_cfg_p
++                        );
+   `ifndef BP_CUSTOM_BASE_CFG
+   `define BP_CUSTOM_BASE_CFG bp_default_cfg_p
+   `endif
+@@ -912,13 +928,16 @@
+       ,`bp_aviary_define_override(io_noc_cid_width, BP_IO_NOC_CID_WIDTH, `BP_CUSTOM_BASE_CFG)
+       ,`bp_aviary_define_override(io_noc_did_width, BP_IO_NOC_DID_WIDTH, `BP_CUSTOM_BASE_CFG)
+       ,`bp_aviary_define_override(io_noc_len_width, BP_IO_NOC_LEN_WIDTH, `BP_CUSTOM_BASE_CFG)
++      
++      ,`bp_aviary_define_override(multithread, BP_MULTITHREAD, `BP_CUSTOM_BASE_CFG)
+       };
+ 
+   /* verilator lint_off WIDTH */
+   parameter bp_proc_param_s [max_cfgs-1:0] all_cfgs_gp =
+   {
++    bp_multicore_1_multithread_cfg_p
+     // Various testing configs
+-    bp_multicore_cce_ucode_half_cfg_p
++    ,bp_multicore_cce_ucode_half_cfg_p
+     ,bp_multicore_half_cfg_p
+     ,bp_unicore_half_cfg_p
+ 
+@@ -985,8 +1004,9 @@
+   // This enum MUST be kept up to date with the parameter array above
+   typedef enum bit [lg_max_cfgs-1:0]
+   {
++    e_bp_multicore_1_multithread_cfg              = 48
+     // Various testing config
+-    e_bp_multicore_cce_ucode_half_cfg               = 47
++    ,e_bp_multicore_cce_ucode_half_cfg              = 47
+     ,e_bp_multicore_half_cfg                        = 46
+     ,e_bp_unicore_half_cfg                          = 45
+ 
+diff --git a/bp_common/src/include/bp_common_core_if.svh b/bp_common/src/include/bp_common_core_if.svh
+index 4bdc018d..83a28949 100644
+--- a/bp_common/src/include/bp_common_core_if.svh
++++ b/bp_common/src/include/bp_common_core_if.svh
+@@ -81,6 +81,7 @@
+      * redirection.  command_queue_subopcode provides the reasons for pc redirection.              \
+      * branch_metadata_fwd provides the information of branch misprediction.                       \
+      * translation_en tells whether the pc is virtual or physical in the case of context switch.   \
++     * asid tells us the ASID of the current context.                                              \
+      * priv is the privilege mode being switched to.                                               \
+     */                                                                                             \
+     typedef struct packed                                                                          \
+@@ -89,7 +90,9 @@
+       logic [branch_metadata_fwd_width_mp-1:0] branch_metadata_fwd;                                \
+       bp_fe_misprediction_reason_e             misprediction_reason;                               \
+       logic                                    translation_en;                                     \
++      logic [asid_width_mp-1:0]                asid;                                               \
+       logic [1:0]                              priv;                                               \
++      logic [multithread_width_p-1:0]          ctxt_id;                                        \
+                                                                                                    \
+       logic [`bp_fe_cmd_pc_redirect_operands_padding_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp)-1:0] \
+                                                padding;                                            \
+@@ -238,9 +241,10 @@
+     (`bp_fe_queue_msg_u_width(vaddr_width_mp, branch_metadata_fwd_width_mp)                        \
+      - `bp_fe_exception_width_no_padding(vaddr_width_mp))
+ 
+-  `define bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp) \
+-    ($bits(bp_fe_command_queue_subopcodes_e)                                                       \
+-     + branch_metadata_fwd_width_mp + $bits(bp_fe_misprediction_reason_e) + 3)
++  `define bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp, asid_width_mp) \
++    ($bits(bp_fe_command_queue_subopcodes_e)                                                           \
++     + branch_metadata_fwd_width_mp + $bits(bp_fe_misprediction_reason_e) + /*translation_en*/1        \
++     + asid_width_mp + /*priv*/2 + multithread_width_p)
+ 
+   `define bp_fe_cmd_attaboy_width_no_padding(branch_metadata_fwd_width_mp) \
+     (1+branch_metadata_fwd_width_mp)
+@@ -252,18 +256,18 @@
+     (asid_width_mp + 2)
+ 
+   `define bp_fe_cmd_operands_u_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp) \
+-    (1+`BSG_MAX(`bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp)     \
+-                ,`BSG_MAX(`bp_fe_cmd_attaboy_width_no_padding(branch_metadata_fwd_width_mp)        \
+-                          ,`BSG_MAX(`bp_fe_cmd_itlb_map_width_no_padding(paddr_width_mp)           \
+-                                    ,`bp_fe_cmd_itlb_fence_width_no_padding(asid_width_mp)         \
+-                                    )                                                              \
+-                          )                                                                        \
+-                )                                                                                  \
++    (1+`BSG_MAX(`bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp, asid_width_mp)     \
++                ,`BSG_MAX(`bp_fe_cmd_attaboy_width_no_padding(branch_metadata_fwd_width_mp)                       \
++                          ,`BSG_MAX(`bp_fe_cmd_itlb_map_width_no_padding(paddr_width_mp)                          \
++                                    ,`bp_fe_cmd_itlb_fence_width_no_padding(asid_width_mp)                        \
++                                    )                                                                             \
++                          )                                                                                       \
++                )                                                                                                 \
+      )
+ 
+   `define bp_fe_cmd_pc_redirect_operands_padding_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp) \
+-    (`bp_fe_cmd_operands_u_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp)      \
+-     - `bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp)              \
++    (`bp_fe_cmd_operands_u_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp)        \
++     - `bp_fe_cmd_pc_redirect_operands_width_no_padding(branch_metadata_fwd_width_mp, asid_width_mp) \
+      )
+ 
+   `define bp_fe_cmd_attaboy_padding_width(paddr_width_mp, asid_width_mp, branch_metadata_fwd_width_mp) \
+diff --git a/bp_common/src/include/bp_common_core_pkgdef.svh b/bp_common/src/include/bp_common_core_pkgdef.svh
+index 989d6b6e..dc9d4ed1 100644
+--- a/bp_common/src/include/bp_common_core_pkgdef.svh
++++ b/bp_common/src/include/bp_common_core_pkgdef.svh
+@@ -38,7 +38,7 @@
+    * e_op_itlb_fill_response happens when itlb populates translation.
+    * e_op_itlb_fence issues a fence operation to itlb.
+    */
+-  typedef enum logic [2:0]
++  typedef enum logic [3:0]
+   {
+     e_op_state_reset           = 0
+     ,e_op_pc_redirection       = 1
+@@ -48,6 +48,7 @@
+     ,e_op_itlb_fill_response   = 5
+     ,e_op_itlb_fence           = 6
+     ,e_op_wait                 = 7
++    ,e_op_context_switch       = 8
+   } bp_fe_command_queue_opcodes_e;
+ 
+   /*
+diff --git a/bp_common/src/include/bp_common_rv64_csr_defines.svh b/bp_common/src/include/bp_common_rv64_csr_defines.svh
+index 8eb4726a..4d8c309a 100644
+--- a/bp_common/src/include/bp_common_rv64_csr_defines.svh
++++ b/bp_common/src/include/bp_common_rv64_csr_defines.svh
+@@ -14,6 +14,16 @@
+   `define CSR_ADDR_UCAUSE        12'h042
+   `define CSR_ADDR_UTVAL         12'h043
+   `define CSR_ADDR_UIP           12'h044
++  // This is the CSR register that holds the ID of the context currently running
++  // on the hart. This CSR register should be accessible to user mode, so we
++  // give it an address under 0x100. All CSRs with addresses greater than or
++  // equal to 0x100 are not accessible to user mode. Notice that `bp_be_csr.sv`
++  // checks `priv_mode_r < csr_cmd_cast_i.csr_addr[9:8]` and if that condition
++  // is true, then the CPU issues an illegal instruction exception. In user
++  // mode, `priv_mode_r` is 0, so we need to make sure that bits 8 and 9 are
++  // both zero in the CTXT CSR address. As long as the address is less than
++  // 0x100 (0x100 = 12'b000100000000), both bits 8 and 9 will be zero.
++  `define CSR_ADDR_CTXT          12'h081
+ 
+   `define CSR_ADDR_FFLAGS        12'h001
+   `define CSR_ADDR_FRM           12'h002
+@@ -245,7 +255,7 @@
+   {                                                                                        \
+     /* We only support No Translation and SV39 */                                          \
+     logic        mode;                                                                     \
+-    /* We don't currently have ASID support */                                             \
++    logic [asid_width_p-1:0] asid;                                                         \
+     /* We only support 39 bit physical address. */                                         \
+     /* TODO: Generate this based on vaddr */                                               \
+     logic [(paddr_width_mp-page_offset_width_gp)-1:0] ppn;                                 \
+@@ -749,14 +759,15 @@
+   `define bp_satp_width ($bits(bp_satp_s))
+ 
+   `define compress_satp_s(data_cast_mp, vaddr_width_mp, paddr_width_mp) \
+-    '{mode: data_cast_mp.mode[3]   \
+-      ,ppn: data_cast_mp.ppn[(paddr_width_mp-page_offset_width_gp)-1:0] \
++    '{mode:  data_cast_mp.mode[3]   \
++      ,asid: data_cast_mp.asid      \
++      ,ppn:  data_cast_mp.ppn[(paddr_width_mp-page_offset_width_gp)-1:0] \
+       }
+ 
+   `define decompress_satp_s(data_comp_mp) \
+-    '{mode: {data_comp_mp.mode, 3'b000} \
+-      ,ppn: {16'h0, data_comp_mp.ppn}   \
+-      ,default: '0                      \
++    '{mode:  {data_comp_mp.mode, 3'b000} \
++      ,asid: data_comp_mp.asid           \
++      ,ppn:  {16'h0, data_comp_mp.ppn}   \
+       }
+ 
+   `define compress_mstatus_s(data_cast_mp, vaddr_width_mp, paddr_width_mp) \
+diff --git a/bp_common/src/v/bp_mmu.sv b/bp_common/src/v/bp_mmu.sv
+index 5da4c2f9..d716ddfa 100644
+--- a/bp_common/src/v/bp_mmu.sv
++++ b/bp_common/src/v/bp_mmu.sv
+@@ -34,6 +34,8 @@ module bp_mmu
+    , input                                            r_store_i
+    , input [dword_width_gp-1:0]                       r_eaddr_i
+ 
++   , input [asid_width_p-1:0]                         asid_i
++
+    , output logic                                     r_v_o
+    , output logic [ptag_width_p-1:0]                  r_ptag_o
+    , output logic                                     r_miss_o
+@@ -98,6 +100,7 @@ module bp_mmu
+      ,.w_i(w_v_i)
+      ,.vtag_i(w_vtag_li)
+      ,.entry_i(w_entry_i)
++     ,.asid_i(asid_i)
+ 
+      ,.v_o(tlb_r_v_lo)
+      ,.entry_o(tlb_r_entry_lo)
+diff --git a/bp_common/src/v/bp_tlb.sv b/bp_common/src/v/bp_tlb.sv
+index 9717759d..25f4caf7 100644
+--- a/bp_common/src/v/bp_tlb.sv
++++ b/bp_common/src/v/bp_tlb.sv
+@@ -23,15 +23,27 @@ module bp_tlb
+    )
+   (input                               clk_i
+    , input                             reset_i
++   // When `flush_i` is 1, flush the TLB.
+    , input                             flush_i
+ 
+    // Single read-write port, but writes also "read" from the TLB
++   // `v_i` is 1 when the input is valid.
+    , input                             v_i
++   // When `v_i` is 1 and `w_i` is 1 when we should write `vtag_i` and `entry_i`
++   // to the TLB. When `v_i` is 1 and `w_i` is 0, then we should read the
++   // physical entry that corresponds to `vtag_i` and output it on `entry_o`,
++   // nothing is written to the TLB.
+    , input                             w_i
++   // `vtag_i` is the virtual address tag to write to the TLB.
+    , input [vtag_width_p-1:0]          vtag_i
++   // `entry_i` is the physical address that corresponds to `vtag_i`.
+    , input [entry_width_lp-1:0]        entry_i
++   // `asid_i` is the ASID for the page table that the input entry belongs to.
++   , input [asid_width_p-1:0]          asid_i
+ 
++   // `v_o` is set to 1 when the output is valid.
+    , output logic                      v_o
++   // `entry_o` is the outputted entry. It is only valid to use when `v_o` is 1.
+    , output logic [entry_width_lp-1:0] entry_o
+    );
+ 
+@@ -45,9 +57,14 @@ module bp_tlb
+   bp_pte_leaf_s entry;
+   assign entry = entry_i;
+ 
++  // Set to 1 when we should read the entry corresponding to `vtag_i` from the
++  // TLB.
+   wire r_v_li = v_i & ~w_i;
++  // Set to 1 when we should write `vtag_i` and `entry_i` to the TLB.
+   wire w_v_li = v_i &  w_i;
+ 
++  // When `flush_4k_li` is 1, flush the entries in the TLB for 4K pages. When
++  // `flush_1g_li` is 1, flush the entries in the TLB for 1G pages.
+   logic flush_4k_li, flush_1g_li;
+ 
+   // We shift so that ppn bits are LSB
+@@ -63,67 +80,123 @@ module bp_tlb
+ 
+   logic [vtag_width_p-1:0] vtag_r;
+   logic r_v_r;
++  logic [asid_width_p-1:0] asid_r;
++  // This flip-flop is *always* triggered by the positive edge of the clock.
++  // Thus, it has no enable bit.
+   bsg_dff_reset
+-   #(.width_p(vtag_width_p+1))
++   #(.width_p(asid_width_p+vtag_width_p+1))
+    r_v_reg
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
+-     ,.data_i({vtag_i, r_v_li})
+-     ,.data_o({vtag_r, r_v_r})
++     // We move the ASID, the virtual address tag, and the bit that tells us if
++     // we should read the entry (see above) through the flip-flop.
++     ,.data_i({asid_i, vtag_i, r_v_li})
++     ,.data_o({asid_r, vtag_r, r_v_r})
+      );
+   wire [r_entry_low_bits_lp-1:0] passthrough_low_bits = vtag_r[0+:r_entry_low_bits_lp];
+ 
++  // This is a (presumably) one-hot variable that tells us the index in
++  // `mem_array_4k` below that contains the physical address we are looking up
++  // for the input virtual address.
+   logic [els_4k_p-1:0] tag_r_match_4k_lo;
++  // This bitmask seems to tell us which entries in the CAM below are empty.
+   logic [els_4k_p-1:0] tag_empty_4k_lo;
++  // This is a one-hot variable that tells us which index in the CAM to
++  // overwrite. `replacement_4k` below implements a replacement policy that
++  // chooses the index for us.
+   logic [els_4k_p-1:0] repl_way_4k_lo;
++  // This is variable that determines which indices in the CAM should be
++  // overwritten. If bit x in this variable is 1, then index x is overwritten in
++  // the CAM. Note that multiple bits may be set to 1.
++  // Two cases in which we write:
++  // 1. If we are writing an entry to the TLB (`w_v_li` is 1) and the entry is
++  //    not for a 1G page (therefore, the entry is for a 4K page), then we
++  //    overwrite the index specified by the one-hot variable `repl_way_4k_lo`.
++  // 2. When we want to flush the TLB (`flush_4k_li` is 1), then we overwrite
++  //    all indices in the CAM.
+   wire [els_4k_p-1:0] tag_4k_w_v_li = ({els_4k_p{w_v_li & ~entry.gigapage}} & repl_way_4k_lo) | {els_4k_p{flush_4k_li}};
++  // This tracks which index in `mem_array_4k` contains the physical page entry
++  // for the virtual address we are looking up / writing.
+   bsg_cam_1r1w_tag_array
+-   #(.width_p(vtag_width_p), .els_p(els_4k_p))
++   // The width of the input data (`width_p`) is the width of an (ASID, vtag)
++   // pair.
++   // `els_p` seems to be the width of the output data. It is set to `els_4k_p`,
++   // since this is the width of the one-hot variables that tells us which index
++   // to access in `mem_array_4k`.
++   #(.width_p(asid_width_p + vtag_width_p), .els_p(els_4k_p))
+    tag_array_4k
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
+ 
++     // `tag_4k_w_v_li` specifies which indices should be overwritten in the
++     // CAM. Multiple bits may be set.
+      ,.w_v_i(tag_4k_w_v_li)
++     // Do not clear the indices corresponding to bits set to 1. In other words,
++     // if a bit is set to 0, its corresponding index is cleared in the CAM.
+      ,.w_set_not_clear_i(~flush_4k_li)
+-     ,.w_tag_i(vtag_i)
++     // We write the ASID and virtual address tag to the CAM. There should be
++     // only one index we write to. Notice that this is `asid_i` and `vtag_i`
++     // rather than `asid_r` and `vtag_r`.
++     ,.w_tag_i({asid_i, vtag_i})
++     // Specifies which entries in the CAM are empty.
+      ,.w_empty_o(tag_empty_4k_lo)
+ 
++     // Determine if the (ASID, vtag) pair exists in the CAM. If so, the index
++     // it is in within the CAM is written as a one-hot signal to
++     // `tag_r_match_4k_lo`.
+      ,.r_v_i(r_v_r)
+-     ,.r_tag_i(vtag_r)
++     ,.r_tag_i({asid_r, vtag_r})
+      ,.r_match_o(tag_r_match_4k_lo)
+      );
+   wire any_match_4k_lo = |tag_r_match_4k_lo;
+ 
++  // When we are writing a virtual address tag and physical page entry pair to
++  // the TLB, we need to determine which index to write the virtual address tag
++  // to in `tag_array_4k` above. This module below implements a replacement
++  // policy that tells us which index to write the virtual address tag to. The
++  // index is specified in the one-hot variable `repl_way_4k_lo`.
+   bsg_cam_1r1w_replacement
+    #(.els_p(els_4k_p))
+    replacement_4k
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
+ 
++     // I am not really sure what this is for. Perhaps we pass this in when we
++     // are reading a value from the CAM so that the replacement policy does not
++     // choose to overwrite the index that the value is in?
+      ,.read_v_i(tag_r_match_4k_lo)
+ 
++     // Pass 1 to `alloc_v_i` when we are writing an entry for a 4K page (i.e.,
++     // the entry is not for a 1G page). This triggers the replacement policy to
++     // run an produce an output via `alloc_v_o`.
+      ,.alloc_v_i(w_v_li & ~entry.gigapage)
++     // Specifies to the replacement policy which entries are currently empty in
++     // the CAM.
+      ,.alloc_empty_i(tag_empty_4k_lo)
++     // Specifies which index to overwrite in the CAM.
+      ,.alloc_v_o(repl_way_4k_lo)
+      );
+ 
++  // These are exactly the same as the variables above but this section handles
++  // 1G pages rather than 4K pages (as above).
+   logic [els_1g_lp-1:0] tag_r_match_1g_lo;
+   logic [els_1g_lp-1:0] tag_empty_1g_lo;
+   logic [els_1g_lp-1:0] repl_way_1g_lo;
++  // Notice that `entry.gigapage` is not inverted here, whereas it is above.
+   wire [els_1g_lp-1:0] tag_1g_w_v_li = ({els_1g_lp{w_v_li & entry.gigapage}} & repl_way_1g_lo) | {els_1g_lp{flush_1g_li}};
+   bsg_cam_1r1w_tag_array
+-   #(.width_p(vtag_width_p), .els_p(els_1g_p))
++   #(.width_p(asid_width_p + vtag_width_p), .els_p(els_1g_p))
+    tag_array_1g
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
+ 
+      ,.w_v_i(tag_1g_w_v_li)
+      ,.w_set_not_clear_i(~flush_1g_li)
+-     ,.w_tag_i(vtag_i)
++     ,.w_tag_i({asid_i, vtag_i})
+      ,.w_empty_o(tag_empty_1g_lo)
+ 
+      ,.r_v_i(r_v_r)
+-     ,.r_tag_i(vtag_r)
++     ,.r_tag_i({asid_r, vtag_r})
+      ,.r_match_o(tag_r_match_1g_lo)
+      );
+   wire any_match_1g_lo = |tag_r_match_1g_lo;
+@@ -144,6 +217,9 @@ module bp_tlb
+   logic [els_4k_p-1:0][r_entry_high_bits_lp-1:0] data_4k_high_r;
+   logic [els_4k_p-1:0][r_entry_low_bits_lp-1:0] data_4k_low_r;
+   wire [els_4k_p-1:0] mem_4k_w_v_li = ({els_4k_p{w_v_li & ~entry.gigapage}} & repl_way_4k_lo);
++  // The actual PTEs are stored in this memory array, which is backed by a
++  // flip-flop. We generate `els_4k_p` different flip-flops, one per entry in
++  // the TLB.
+   for (genvar i = 0; i < els_4k_p; i++)
+     begin : mem_array_4k
+       bsg_dff_en
+diff --git a/bp_common/syn/Makefile.verilator b/bp_common/syn/Makefile.verilator
+index fa7011be..de02ec74 100644
+--- a/bp_common/syn/Makefile.verilator
++++ b/bp_common/syn/Makefile.verilator
+@@ -89,7 +89,7 @@ sim.sc: SIM_REPORT := $(REPORT_DIR)/$(TB).$(CFG).$(TAG).sim.$(SUITE).$(PROG).rpt
+ sim.sc: SIM_ERROR  := $(REPORT_DIR)/$(TB).$(CFG).$(TAG).sim.$(SUITE).$(PROG).err
+ $(SIM_COLLATERAL): | $(TOUCH_DIR) $(RESULTS_DIR) $(LOG_DIR) $(REPORT_DIR) $(SIM_DIR)
+ $(SIM_DIR)/run_simsc: | $(SIM_COLLATERAL)
+-	cd $(@D); ./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS) 2>&1 | tee $(SIM_LOG)
++	cd $(@D); ./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS) 2>&1
+ 	-@grep "PASS" $(SIM_LOG) || echo "FAILED" > $(SIM_ERROR)
+ 	-@grep "STATS" -A 3 $(SIM_LOG) > $(SIM_REPORT)
+ 
+diff --git a/bp_common/syn/Makefile.vivado b/bp_common/syn/Makefile.vivado
+index 1d027e58..23cdac9b 100644
+--- a/bp_common/syn/Makefile.vivado
++++ b/bp_common/syn/Makefile.vivado
+@@ -13,7 +13,7 @@ $(TOUCH_DIR) $(RESULTS_DIR) $(LOG_DIR) $(REPORT_DIR) $(SYNTH_DIR):
+ 
+ include $(TB_PATH)/$(TB)/Makefile.vivado
+ 
+-PART ?= xc7k325tffg900-2
++PART ?= XC7A12T
+ 
+ synth.vivado: $(SYNTH_DIR)/synth
+ synth.vivado: SYNTH_LOG   := $(LOG_DIR)/$(TB).$(CFG).$(TAG).synth.log
+diff --git a/bp_fe/src/v/bp_fe_btb.sv b/bp_fe/src/v/bp_fe_btb.sv
+index 7d24c5bc..4fa09b8f 100644
+--- a/bp_fe/src/v/bp_fe_btb.sv
++++ b/bp_fe/src/v/bp_fe_btb.sv
+@@ -52,6 +52,7 @@ module bp_fe_btb
+ 
+   assign init_done_o = is_run;
+ 
++  // Init Counter lets us know when finish init is complete for init_done_o
+   localparam btb_els_lp = 2**btb_idx_width_p;
+   logic [`BSG_WIDTH(btb_els_lp)-1:0] init_cnt;
+   bsg_counter_clear_up
+@@ -66,6 +67,9 @@ module bp_fe_btb
+      );
+   wire finished_init = (init_cnt == btb_els_lp-1'b1);
+ 
++  // FSM: 
++  //  if state register is in e_clear, next state is running if we finished init
++  //                          else its in e_run, and we stay running
+   always_comb
+     case (state_r)
+       e_clear: state_n = finished_init ? e_run : e_clear;
+diff --git a/bp_fe/src/v/bp_fe_pc_gen.sv b/bp_fe/src/v/bp_fe_pc_gen.sv
+index d342ff86..ac62f292 100644
+--- a/bp_fe/src/v/bp_fe_pc_gen.sv
++++ b/bp_fe/src/v/bp_fe_pc_gen.sv
+@@ -18,7 +18,7 @@ module bp_fe_pc_gen
+    )
+   (input                                             clk_i
+    , input                                           reset_i
+-
++   , input                                           is_curr_ctxt
+    , output logic                                    init_done_o
+ 
+    , input                                           redirect_v_i
+@@ -82,9 +82,11 @@ module bp_fe_pc_gen
+         next_pc_o = btb_br_tgt_lo;
+     else
+       begin
+-        next_pc_o = pc_plus4;
++        //next_pc_o = pc_plus4;
++        next_pc_o = is_curr_ctxt ? pc_plus4 : pc_if1_r;
+       end
+-  assign pc_if1_n = next_pc_o;
++//  assign pc_if1_n = is_curr_ctxt ? next_pc_o : pc_if1_r;
++    assign pc_if1_n = next_pc_o;
+ 
+   always_comb
+     begin
+diff --git a/bp_fe/src/v/bp_fe_top.sv b/bp_fe/src/v/bp_fe_top.sv
+index cc1d617a..003ae416 100644
+--- a/bp_fe/src/v/bp_fe_top.sv
++++ b/bp_fe/src/v/bp_fe_top.sv
+@@ -77,30 +77,54 @@ module bp_fe_top
+   wire is_run      = (state_r == e_run);
+   wire is_stall    = (state_r == e_stall);
+ 
+-  logic pc_gen_init_done_lo;
++  ////////////////////
++  // Duplicated PC Gen - Output
++  ////////////////////
++  logic [multithread_p-1:0] pc_gen_init_done_lo;
++  logic [multithread_p-1:0] [vaddr_width_p-1:0] next_pc_lo;
++
++  logic [multithread_p-1:0] ovr_lo;
++
++  bp_fe_branch_metadata_fwd_s [multithread_p-1:0] fetch_br_metadata_fwd_lo;
++  logic [multithread_p-1:0] [vaddr_width_p-1:0] fetch_pc_lo;
++
++  logic [multithread_p-1:0] attaboy_yumi_lo;
++
++  ////////////////////
++  // Duplicated PC Gen - Input
++  //////////////////// 
+   logic redirect_v_li;
+   logic [vaddr_width_p-1:0] redirect_pc_li;
+   logic redirect_br_v_li, redirect_br_taken_li, redirect_br_ntaken_li, redirect_br_nonbr_li;
+   bp_fe_branch_metadata_fwd_s redirect_br_metadata_fwd_li;
+-  bp_fe_branch_metadata_fwd_s attaboy_br_metadata_fwd_li;
+-  logic attaboy_v_li, attaboy_yumi_lo, attaboy_taken_li, attaboy_ntaken_li;
+-  logic [vaddr_width_p-1:0] attaboy_pc_li;
++
++  bp_fe_branch_metadata_fwd_s [multithread_p-1:0] attaboy_br_metadata_fwd_li;
++  logic [multithread_p-1:0] attaboy_v_li, attaboy_taken_li, attaboy_ntaken_li;
++  logic [multithread_p-1:0] [vaddr_width_p-1:0] attaboy_pc_li;
+   logic [instr_width_gp-1:0] fetch_li;
+-  logic [vaddr_width_p-1:0] fetch_pc_lo;
+-  logic fetch_instr_v_li, fetch_exception_v_li, fetch_fail_v_li;
+-  bp_fe_branch_metadata_fwd_s fetch_br_metadata_fwd_lo;
+-  logic [vaddr_width_p-1:0] next_pc_lo;
+-  logic next_pc_yumi_li;
+-  logic ovr_lo;
+-  bp_fe_pc_gen
+-   #(.bp_params_p(bp_params_p))
+-   pc_gen
++  logic fetch_instr_v_li, fetch_exception_v_li; 
++  logic fetch_fail_v_li;
++  logic next_pc_yumi_li; //should be good
++
++  logic state_reset_r;
++  always_ff @(posedge clk_i) begin
++    state_reset_r <= state_reset_v;
++  end
++
++
++  ////////////////////
++  // Duplicated PC Gen 
++  ////////////////////
++  for (genvar i = 0; i < multithread_p; i++) begin: pgen
++    bp_fe_pc_gen
++    #(.bp_params_p(bp_params_p))
++    pc_gen
+     (.clk_i(clk_i)
+      ,.reset_i(reset_i)
++     ,.is_curr_ctxt(curr_ctxt_id == i)
++     ,.init_done_o(pc_gen_init_done_lo[i])
+ 
+-     ,.init_done_o(pc_gen_init_done_lo)
+-
+-     ,.redirect_v_i(redirect_v_li)
++     ,.redirect_v_i(redirect_v_li & ((curr_ctxt_id == i) | state_reset_r))
+      ,.redirect_pc_i(redirect_pc_li)
+      ,.redirect_br_v_i(redirect_br_v_li)
+      ,.redirect_br_metadata_fwd_i(redirect_br_metadata_fwd_li)
+@@ -108,27 +132,64 @@ module bp_fe_top
+      ,.redirect_br_ntaken_i(redirect_br_ntaken_li)
+      ,.redirect_br_nonbr_i(redirect_br_nonbr_li)
+ 
+-     ,.next_pc_o(next_pc_lo)
+-     ,.next_pc_yumi_i(next_pc_yumi_li)
++     ,.next_pc_o(next_pc_lo[i])
++     ,.next_pc_yumi_i(next_pc_yumi_li & (curr_ctxt_id == i))
+ 
+-     ,.ovr_o(ovr_lo)
++     ,.ovr_o(ovr_lo[i])                  
+ 
+      ,.fetch_i(fetch_li)
+-     ,.fetch_instr_v_i(fetch_instr_v_li)
+-     ,.fetch_exception_v_i(fetch_exception_v_li)
+-     ,.fetch_br_metadata_fwd_o(fetch_br_metadata_fwd_lo)
+-     ,.fetch_pc_o(fetch_pc_lo)
+-
+-     ,.attaboy_pc_i(attaboy_pc_li)
+-     ,.attaboy_br_metadata_fwd_i(attaboy_br_metadata_fwd_li)
+-     ,.attaboy_taken_i(attaboy_taken_li)
+-     ,.attaboy_ntaken_i(attaboy_ntaken_li)
+-     ,.attaboy_v_i(attaboy_v_li)
+-     ,.attaboy_yumi_o(attaboy_yumi_lo)
++     ,.fetch_instr_v_i(fetch_instr_v_li & curr_ctxt[i])
++     ,.fetch_exception_v_i(fetch_exception_v_li & curr_ctxt[i])
++     ,.fetch_br_metadata_fwd_o(fetch_br_metadata_fwd_lo[i])
++     ,.fetch_pc_o(fetch_pc_lo[i])
++
++     ,.attaboy_pc_i(attaboy_pc_li[i])
++     ,.attaboy_br_metadata_fwd_i(attaboy_br_metadata_fwd_li[i])
++     ,.attaboy_taken_i(attaboy_taken_li[i])
++     ,.attaboy_ntaken_i(attaboy_ntaken_li[i])
++     ,.attaboy_v_i(attaboy_v_li[i])
++     ,.attaboy_yumi_o(attaboy_yumi_lo[i])
+      );
++  end
++
++  ////////////////////
++  // Getting the thread id from fe_cmd 
++  ////////////////////
++  logic [multithread_p-1:0] curr_ctxt_r;    //One hot encoding
++  logic [multithread_p-1:0] curr_ctxt_id_r; //Not one hot encoding
++
++  bsg_dff_reset_en
++  // `curr_ctxt`, which has a one-hot encoding, is set to context 0 by default.
++  // Remember that 0x1 is the one-hot encoding for context 0.
++    #(.width_p(multithread_p), .reset_val_p(1))
++  curr_ctxt_ff
++    (.clk_i(clk_i)
++    ,.reset_i(reset_i)
++    ,.en_i(is_ctxtsw)
++
++    ,.data_i(1 << fe_cmd_cast_i.operands.pc_redirect_operands.ctxt_id)
++    ,.data_o(curr_ctxt_r)
++    );
++
++  bsg_dff_reset_en
++  // `curr_ctxt_id` is set to context 0 by default.
++    #(.width_p(multithread_p), .reset_val_p(0))
++  curr_ctxt_id_ff
++    (.clk_i(clk_i)
++    ,.reset_i(reset_i)
++    ,.en_i(is_ctxtsw)
+ 
++    ,.data_i(fe_cmd_cast_i.operands.pc_redirect_operands.ctxt_id)
++    ,.data_o(curr_ctxt_id_r)
++    );
++
++  wire [multithread_p-1:0] curr_ctxt = is_ctxtsw ? (1 << fe_cmd_cast_i.operands.pc_redirect_operands.ctxt_id) : curr_ctxt_r;
++  wire [multithread_p-1:0] curr_ctxt_id = is_ctxtsw ? fe_cmd_cast_i.operands.pc_redirect_operands.ctxt_id : curr_ctxt_id_r;
++
++  wire is_ctxtsw              = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_context_switch);
+   wire state_reset_v          = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_state_reset);
+-  wire pc_redirect_v          = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_pc_redirection);
++  wire pc_redirect_v          = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_pc_redirection) | is_ctxtsw;
++  wire context_switch_v       = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_context_switch);
+   wire itlb_fill_v            = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_itlb_fill_response);
+   wire icache_fence_v         = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_icache_fence);
+   wire icache_fill_response_v = fe_cmd_v_i & (fe_cmd_cast_i.opcode == e_op_icache_fill_response);
+@@ -152,8 +213,14 @@ module bp_fe_top
+   wire eret_v        = pc_redirect_v & (fe_cmd_cast_i.operands.pc_redirect_operands.subopcode == e_subop_eret);
+   wire translation_v = pc_redirect_v & (fe_cmd_cast_i.operands.pc_redirect_operands.subopcode == e_subop_translation_switch);
+ 
++  // `shadow_priv_n` is the privilege mode that the hart will have in the next
++  // cycle. `shadow_priv_r` is the privilege mode that the hart has currently.
+   logic [rv64_priv_width_gp-1:0] shadow_priv_n, shadow_priv_r;
+-  wire shadow_priv_w = state_reset_v | trap_v | eret_v;
++  // When `shadow_priv_w` is 1, we need to update the privilege mode of the
++  // hart. On a context switch, we need to update the privilege mode of the hart
++  // because the next context to run on the hart may be a in different privilege
++  // mode.
++  wire shadow_priv_w = state_reset_v | trap_v | eret_v | context_switch_v;
+   assign shadow_priv_n = fe_cmd_cast_i.operands.pc_redirect_operands.priv;
+   bsg_dff_reset_en_bypass
+    #(.width_p(rv64_priv_width_gp))
+@@ -166,8 +233,16 @@ module bp_fe_top
+      ,.data_o(shadow_priv_r)
+      );
+ 
++  // `shadow_translation_en_n` is 1 when virtual-addressing mode should be
++  // turned on for the hart in the next cycle. `shadow_translation_en_r` is 1
++  // when the hart is currently in virtual-addressing mode; it is 0 when the
++  // hart is in physical-addressing mode.
+   logic shadow_translation_en_n, shadow_translation_en_r;
+-  wire shadow_translation_en_w = state_reset_v | trap_v | eret_v | translation_v;
++  // When `shadow_translation_en_w` is 1, we need to update the translation
++  // mode for the hart. On a context switch, we need to update the translation
++  // mode of the hart because the next context to run on the hart may be in a
++  // different translation mode.
++  wire shadow_translation_en_w = state_reset_v | trap_v | eret_v | translation_v | context_switch_v;
+   assign shadow_translation_en_n = fe_cmd_cast_i.operands.pc_redirect_operands.translation_en;
+   bsg_dff_reset_en_bypass
+    #(.width_p(1))
+@@ -180,12 +255,26 @@ module bp_fe_top
+      ,.data_o(shadow_translation_en_r)
+      );
+ 
++  logic [asid_width_p-1:0] shadow_asid_n, shadow_asid_r;
++  wire shadow_asid_w = translation_v | context_switch_v;
++  assign shadow_asid_n = fe_cmd_cast_i.operands.pc_redirect_operands.asid;
++  bsg_dff_reset_en_bypass
++   #(.width_p(asid_width_p))
++   shadow_asid_reg
++    (.clk_i(clk_i)
++     ,.reset_i(reset_i)
++     ,.en_i(shadow_asid_w)
++
++     ,.data_i(shadow_asid_n)
++     ,.data_o(shadow_asid_r)
++     );
++
+   // Change the resume pc on redirect command, else save the PC in IF2 while running
+   logic [vaddr_width_p-1:0] pc_resume_n, pc_resume_r;
+   bp_fe_branch_metadata_fwd_s br_metadata_fwd_resume_n, br_metadata_fwd_resume_r;
+   logic br_miss_r, br_miss_nonbr_r, br_miss_taken_r, br_miss_ntaken_r;
+-  assign pc_resume_n = cmd_nonattaboy_v ? fe_cmd_cast_i.vaddr : fetch_pc_lo;
+-  assign br_metadata_fwd_resume_n = cmd_nonattaboy_v ? fe_cmd_cast_i.operands.pc_redirect_operands.branch_metadata_fwd : fetch_br_metadata_fwd_lo;
++  assign pc_resume_n = cmd_nonattaboy_v ? fe_cmd_cast_i.vaddr : fetch_pc_lo[curr_ctxt_id];
++  assign br_metadata_fwd_resume_n = cmd_nonattaboy_v ? fe_cmd_cast_i.operands.pc_redirect_operands.branch_metadata_fwd : fetch_br_metadata_fwd_lo[curr_ctxt_id];
+   bsg_dff_reset_en_bypass
+    #(.width_p(4+$bits(bp_fe_branch_metadata_fwd_s)+vaddr_width_p))
+    pc_resume_reg
+@@ -196,18 +285,18 @@ module bp_fe_top
+      ,.data_i({br_miss_v, br_miss_nonbr, br_miss_taken, br_miss_ntaken, br_metadata_fwd_resume_n, pc_resume_n})
+      ,.data_o({br_miss_r, br_miss_nonbr_r, br_miss_taken_r, br_miss_ntaken_r, br_metadata_fwd_resume_r, pc_resume_r})
+      );
+-  assign redirect_v_li               = (is_stall & next_pc_yumi_li) | cmd_immediate_v;
+-  assign redirect_pc_li              = pc_resume_r;
+-  assign redirect_br_v_li            = redirect_v_li & br_miss_r;
+-  assign redirect_br_metadata_fwd_li = br_metadata_fwd_resume_r;
+-  assign redirect_br_taken_li        = br_miss_taken_r;
+-  assign redirect_br_ntaken_li       = br_miss_ntaken_r;
++  assign redirect_v_li                  = (is_stall & (next_pc_yumi_li)) | cmd_immediate_v;
++  assign redirect_pc_li                 = pc_resume_r;
++  assign redirect_br_v_li               = redirect_v_li & br_miss_r;
++  assign redirect_br_metadata_fwd_li    = br_metadata_fwd_resume_r;
++  assign redirect_br_taken_li           = br_miss_taken_r;
++  assign redirect_br_ntaken_li          = br_miss_ntaken_r;
+   assign redirect_br_nonbr_li        = br_miss_nonbr_r;
+ 
+-  assign attaboy_br_metadata_fwd_li = fe_cmd_cast_i.operands.attaboy.branch_metadata_fwd;
+-  assign attaboy_taken_li           = attaboy_v &  fe_cmd_cast_i.operands.attaboy.taken;
+-  assign attaboy_ntaken_li          = attaboy_v & ~fe_cmd_cast_i.operands.attaboy.taken;
+-  assign attaboy_v_li               = attaboy_v;
++  assign attaboy_br_metadata_fwd_li[0] = fe_cmd_cast_i.operands.attaboy.branch_metadata_fwd;
++  assign attaboy_taken_li[0]           = attaboy_v &  fe_cmd_cast_i.operands.attaboy.taken;
++  assign attaboy_ntaken_li[0]          = attaboy_v & ~fe_cmd_cast_i.operands.attaboy.taken;
++  assign attaboy_v_li[0]               = attaboy_v;
+   assign attaboy_pc_li              = fe_cmd_cast_i.vaddr;
+ 
+   logic instr_access_fault_v, instr_page_fault_v;
+@@ -218,7 +307,8 @@ module bp_fe_top
+   wire [vtag_width_p-1:0] w_vtag_li = fe_cmd_cast_i.vaddr[vaddr_width_p-1-:vtag_width_p];
+   assign w_tlb_entry_li = fe_cmd_cast_i.operands.itlb_fill_response.pte_leaf;
+ 
+-  wire [dword_width_gp-1:0] r_eaddr_li = dword_width_gp'($signed(next_pc_lo));
++  wire [dword_width_gp-1:0] r_eaddr_li = dword_width_gp'($signed(next_pc_lo[curr_ctxt_id]));
++  // This is the iTLB.
+   bp_mmu
+    #(.bp_params_p(bp_params_p)
+      ,.tlb_els_4k_p(itlb_els_4k_p)
+@@ -231,6 +321,8 @@ module bp_fe_top
+      ,.flush_i(itlb_fence_v)
+      ,.priv_mode_i(shadow_priv_r)
+      ,.trans_en_i(shadow_translation_en_r)
++     ,.asid_i(shadow_asid_r)
++
+      // Supervisor use of user memory is always disabled for immu
+      ,.sum_i('0)
+      ,.uncached_mode_i((cfg_bus_cast_i.icache_mode == e_lce_mode_uncached))
+@@ -263,7 +355,7 @@ module bp_fe_top
+ 
+   `declare_bp_fe_icache_pkt_s(vaddr_width_p);
+   bp_fe_icache_pkt_s icache_pkt;
+-  assign icache_pkt = '{vaddr: next_pc_lo
++  assign icache_pkt = '{vaddr: next_pc_lo[curr_ctxt_id]
+                         ,op  : icache_fence_v ? e_icache_fencei : icache_fill_response_v ? e_icache_fill : e_icache_fetch
+                         };
+   // TODO: Should only ack icache fence when icache_ready
+@@ -353,11 +445,11 @@ module bp_fe_top
+   wire fe_instr_v     = v_if2_r & icache_data_v_lo;
+   assign fe_queue_v_o = fe_queue_ready_i & (fe_instr_v | fe_exception_v) & ~cmd_nonattaboy_v;
+ 
+-  assign icache_poison_tl = ovr_lo | fe_exception_v | queue_miss | cmd_nonattaboy_v;
++  assign icache_poison_tl = ovr_lo[0] | fe_exception_v | queue_miss | cmd_nonattaboy_v;
+   assign icache_poison_tv = fe_exception_v | cmd_nonattaboy_v;
+ 
+-  assign fe_cmd_yumi_o = pc_gen_init_done_lo & (cmd_nonattaboy_v | attaboy_yumi_lo);
+-  assign next_pc_yumi_li = (state_n == e_run);
++  assign fe_cmd_yumi_o = pc_gen_init_done_lo[curr_ctxt_id] & (cmd_nonattaboy_v | attaboy_yumi_lo[0]);
++  assign next_pc_yumi_li = state_n == e_run;
+ 
+   assign fetch_instr_v_li     = fe_queue_v_o & fe_instr_v;
+   assign fetch_exception_v_li = fe_queue_v_o & fe_exception_v;
+@@ -371,7 +463,7 @@ module bp_fe_top
+       begin
+         fe_queue_cast_o = '0;
+         fe_queue_cast_o.msg_type                     = e_fe_exception;
+-        fe_queue_cast_o.msg.exception.vaddr          = fetch_pc_lo;
++        fe_queue_cast_o.msg.exception.vaddr          = fetch_pc_lo[curr_ctxt_id];
+         fe_queue_cast_o.msg.exception.exception_code = itlb_miss_r
+                                                        ? e_itlb_miss
+                                                        : instr_page_fault_r
+@@ -384,9 +476,9 @@ module bp_fe_top
+       begin
+         fe_queue_cast_o = '0;
+         fe_queue_cast_o.msg_type                      = e_fe_fetch;
+-        fe_queue_cast_o.msg.fetch.pc                  = fetch_pc_lo;
++        fe_queue_cast_o.msg.fetch.pc                  = fetch_pc_lo[curr_ctxt_id];
+         fe_queue_cast_o.msg.fetch.instr               = fetch_li;
+-        fe_queue_cast_o.msg.fetch.branch_metadata_fwd = fetch_br_metadata_fwd_lo;
++        fe_queue_cast_o.msg.fetch.branch_metadata_fwd = fetch_br_metadata_fwd_lo[curr_ctxt_id];
+       end
+ 
+   // Controlling state machine
+@@ -420,4 +512,3 @@ module bp_fe_top
+       end
+ 
+ endmodule
+-
+diff --git a/bp_top/syn/flist.vcs b/bp_top/syn/flist.vcs
+index b277cc4a..8fdd53a1 100644
+--- a/bp_top/syn/flist.vcs
++++ b/bp_top/syn/flist.vcs
+@@ -189,6 +189,7 @@ $BP_BE_DIR/src/v/bp_be_top.sv
+ # Calculator
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_calculator_top.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_csr.sv
++$BP_BE_DIR/src/v/bp_be_calculator/bp_be_csr_wrapper.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_fp_to_rec.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_pipe_int.sv
+ $BP_BE_DIR/src/v/bp_be_calculator/bp_be_pipe_aux.sv
+diff --git a/bp_top/test/tb/bp_tethered/Makefile.verilator b/bp_top/test/tb/bp_tethered/Makefile.verilator
+index 30a17b17..e0c654f9 100644
+--- a/bp_top/test/tb/bp_tethered/Makefile.verilator
++++ b/bp_top/test/tb/bp_tethered/Makefile.verilator
+@@ -99,7 +99,7 @@ $(SIM_DIR)/run_samplesc: $(SAMPLE_COLLATERAL)
+ 	cd $(@D); \
+ 		python $(MEM2NBF) $(NBF_INPUTS) > prog.nbf
+ 	cd $(@D); \
+-		./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS) | tee $(SIM_LOG)
++		./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS)
+ 	-@grep "PASS" $(SIM_LOG) || echo "FAILED" > $(SIM_ERROR)
+ 	-@grep "STATS" -A 3 $(SIM_LOG) > $(SIM_REPORT)
+ 
+@@ -114,7 +114,7 @@ $(SIM_DIR)/tire_kick: $(TOUCH_DIR) $(RESULTS_DIR) $(LOG_DIR) $(REPORT_DIR) $(SIM
+ 	## Stub out cce_ucode and bootrom since they're unused by this example
+ 	touch $(@D)/cce_ucode.mem $(@D)/bootrom.mem
+ 	cd $(@D); python $(MEM2NBF) $(NBF_INPUTS) > $(@D)/prog.nbf
+-	cd $(@D); ./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS) 2>&1 | tee $(SIM_LOG)
++	cd $(@D); ./simsc $(VERILATOR_OPTIONS) $(VERILATOR_PLUSARGS) 2>&1
+ 	-@grep "PASS" $(SIM_LOG) || echo "FAILED" > $(SIM_ERROR)
+ 	-@grep "STATS" -A 3 $(SIM_LOG) > $(SIM_REPORT)
+ 
+diff --git a/bp_top/test/tb/bp_tethered/testbench.sv b/bp_top/test/tb/bp_tethered/testbench.sv
+index 3419e7df..d09d1873 100644
+--- a/bp_top/test/tb/bp_tethered/testbench.sv
++++ b/bp_top/test/tb/bp_tethered/testbench.sv
+@@ -268,13 +268,13 @@ module testbench
+          perf
+           (.clk_i(clk_i)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+            ,.warmup_instr_i(testbench.warmup_instr_p)
+ 
+-           ,.mhartid_i(calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+ 
+            ,.commit_v_i(calculator.commit_pkt_cast_o.instret)
+-           ,.is_debug_mode_i(calculator.pipe_sys.csr.is_debug_mode)
++           ,.is_debug_mode_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.is_debug_mode)
+            );
+ 
+       bind bp_be_top
+@@ -286,12 +286,12 @@ module testbench
+          watchdog
+           (.clk_i(clk_i)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+            ,.wfi_i(director.is_wait)
+ 
+-           ,.mhartid_i(calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+ 
+-           ,.npc_i(calculator.pipe_sys.csr.apc_r)
++           ,.npc_i(director.expected_npc_o)
+            ,.instret_i(calculator.commit_pkt_cast_o.instret)
+            );
+ 
+@@ -302,7 +302,7 @@ module testbench
+          cosim
+           (.clk_i(clk_i)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+ 
+            // We want to pass these values as parameters, but cannot in Verilator 4.025
+            // Parameter-resolved constants must not use dotted references
+@@ -310,7 +310,7 @@ module testbench
+            ,.trace_en_i(testbench.cmt_trace_en_lo)
+            ,.checkpoint_i(testbench.checkpoint_p == 1)
+            ,.num_core_i(testbench.num_core_p)
+-           ,.mhartid_i(calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+            ,.config_file_i(testbench.cosim_cfg_file_p)
+            ,.instr_cap_i(testbench.cosim_instr_p)
+            ,.memsize_i(testbench.cosim_memsize_p)
+@@ -318,13 +318,13 @@ module testbench
+ 
+            ,.decode_i(calculator.reservation_n.decode)
+ 
+-           ,.is_debug_mode_i(calculator.pipe_sys.csr.is_debug_mode)
++           ,.is_debug_mode_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.is_debug_mode)
+            ,.commit_pkt_i(calculator.commit_pkt_cast_o)
+ 
+-           ,.priv_mode_i(calculator.pipe_sys.csr.priv_mode_r)
+-           ,.mstatus_i(calculator.pipe_sys.csr.mstatus_lo)
+-           ,.mcause_i(calculator.pipe_sys.csr.mcause_lo)
+-           ,.scause_i(calculator.pipe_sys.csr.scause_lo)
++           ,.priv_mode_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.priv_mode_r)
++           ,.mstatus_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.mstatus_lo)
++           ,.mcause_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.mcause_lo)
++           ,.scause_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.scause_lo)
+ 
+            ,.ird_w_v_i(scheduler.iwb_pkt_cast_i.ird_w_v)
+            ,.ird_addr_i(scheduler.iwb_pkt_cast_i.rd_addr)
+@@ -445,9 +445,9 @@ module testbench
+          vm_tracer
+           (.clk_i(clk_i & testbench.vm_trace_en_lo)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(be.calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+ 
+-           ,.mhartid_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(be.calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+ 
+            ,.itlb_clear_i(fe.immu.tlb.flush_i)
+            ,.itlb_fill_v_i(fe.immu.tlb.w_v_li)
+@@ -470,9 +470,9 @@ module testbench
+          core_profiler
+           (.clk_i(clk_i & testbench.core_profile_en_lo)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(be.calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+ 
+-           ,.mhartid_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(be.calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+ 
+            ,.fe_wait_stall(fe.is_wait)
+            ,.fe_queue_stall(~fe.fe_queue_ready_i)
+@@ -481,8 +481,8 @@ module testbench
+            ,.icache_miss(~fe.icache.ready_o)
+            ,.icache_rollback(fe.icache_miss)
+            ,.icache_fence(fe.icache.fencei_req)
+-           ,.branch_override(fe.pc_gen.ovr_taken & ~fe.pc_gen.ovr_ret)
+-           ,.ret_override(fe.pc_gen.ovr_ret)
++           ,.branch_override(fe.pgen[0].pc_gen.ovr_taken & ~fe.pgen[0].pc_gen.ovr_ret)
++           ,.ret_override(fe.pgen[0].pc_gen.ovr_ret)
+ 
+            ,.fe_cmd(fe.fe_cmd_yumi_o & ~fe.attaboy_v)
+            ,.fe_cmd_fence(be.director.suppress_iss_o)
+@@ -522,9 +522,9 @@ module testbench
+          pc_profiler
+           (.clk_i(clk_i & testbench.pc_profile_en_lo)
+            ,.reset_i(reset_i)
+-           ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
++           ,.freeze_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.freeze)
+ 
+-           ,.mhartid_i(calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
++           ,.mhartid_i(calculator.pipe_sys.csr_wrapper.gen_csr[0].csr.cfg_bus_cast_i.core_id)
+ 
+            ,.commit_pkt(calculator.commit_pkt_cast_o)
+            );
+diff --git a/kylee.c b/kylee.c
+new file mode 100644
+index 00000000..9873a313
+--- /dev/null
++++ b/kylee.c
+@@ -0,0 +1,31 @@
++
++#include <stdint.h>
++#include "bp_utils.h"
++
++
++int main(int argc, char** argv) {
++    bp_cprint('H');
++    bp_cprint('e');
++    bp_cprint('l');
++    bp_cprint('l');
++    bp_cprint('o');
++    bp_cprint(' ');
++    bp_cprint('K');
++    bp_cprint('y');
++    bp_cprint('l');
++    bp_cprint('e');
++    bp_cprint('e');
++    bp_cprint('!');
++    bp_cprint('\n');
++    
++    uint64_t context = 5; 
++    __asm__ __volatile__ ("csrr  %0, 0x181": "=r" (context): :);
++    if(context == 0){
++	context = context + 1;
++	__asm__ __volatile__ ("csrw 0x181, %0": : "r" (context));
++    } else {
++        bp_cprint('2');
++	bp_cprint('\n');
++    }
++    return 0;
++}
+diff --git a/kylee.riscv b/kylee.riscv
+new file mode 100755
+index 00000000..7beece79
+Binary files /dev/null and b/kylee.riscv differ
+diff --git a/kylee_long.c b/kylee_long.c
+new file mode 100644
+index 00000000..15d4dd73
+--- /dev/null
++++ b/kylee_long.c
+@@ -0,0 +1,38 @@
++#include <stdint.h>
++#include "bp_utils.h"
++
++
++int main(int argc, char** argv) {
++    bp_cprint('H');
++    bp_cprint('e');
++    bp_cprint('l');
++    bp_cprint('l');
++    bp_cprint('o');
++    bp_cprint(' ');
++    bp_cprint('K');
++    bp_cprint('y');
++    bp_cprint('l');
++    bp_cprint('e');
++    bp_cprint('e');
++    bp_cprint('!');
++    bp_cprint('\n');
++
++    uint64_t context = 5;
++    __asm__ __volatile__ ("csrr  %0, 0x181": "=r" (context): :);
++    if(context == 0){
++	context = context + 1;
++	__asm__ __volatile__ ("csrw 0x181, %0": : "r" (context));
++        bp_cprint('1');
++	bp_cprint('\n');
++    } else {
++        bp_cprint('2');
++	bp_cprint('\n');
++    }
++
++    bp_cprint('B');
++    bp_cprint('O');
++    bp_cprint('T');
++    bp_cprint('H');
++    bp_cprint('\n');
++    return 0;
++}
+diff --git a/test.md b/test.md
+new file mode 100644
+index 00000000..e69de29b
