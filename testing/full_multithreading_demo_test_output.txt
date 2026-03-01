@@ -1,0 +1,419 @@
+coyang@blackparrot:~/temp/black-parrot-sim$ ./testing/rebuild-and-test.sh
+ls: cannot access '/home/coyang/temp/black-parrot-sim/black-parrot-sdk/riscv/bp-tests/multithreading_demo.riscv': No such file or directory
+/home/coyang/temp/black-parrot-sim/install/lib/gcc/riscv64-unknown-elf/15.1.0/../../../../riscv64-unknown-elf/bin/ld: warning: /home/coyang/temp/black-parrot-sim/black-parrot-sdk/riscv/bp-tests/multithreading_demo.riscv has a LOAD segment with RWX permissions
+/home/coyang/temp/black-parrot-sim/black-parrot-sdk/riscv/bp-tests/multithreading_demo.riscv
+make: Entering directory '/home/coyang/temp/black-parrot-sim/black-parrot/bp_top/verilator'
+## bsg_mem_1r1w_sync: instantiating width_p=         50, els_p=         64, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.pc_gen.btb.btb_mem)
+## bsg_mem_1r1w_sync_synth: instantiating width_p=         50, els_p=         64 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.pc_gen.btb.btb_mem.synth)
+## bsg_mem_1r1w_sync: instantiating width_p=          8, els_p=        512, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.pc_gen.bht.bht_mem)
+## bsg_mem_1r1w_sync_synth: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.pc_gen.bht.bht_mem.synth)
+## bsg_mem_1r1w: instantiating width_p=         43, els_p=         16, read_write_same_addr_p=          1, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.pc_gen.ras.mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=        184, els_p=         64 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.tag_mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=          7, els_p=         64 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.stat_mem)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[0].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[0].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[1].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[1].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[2].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[2].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[3].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[3].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[4].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[4].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[5].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[5].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[6].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[6].data_mem.synth)
+## bsg_mem_1rw_sync: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[7].data_mem)
+## bsg_mem_1rw_sync_synth: instantiating width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.data_mems[7].data_mem.synth)
+## bsg_mem_1r1w: instantiating width_p=        114, els_p=          4, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.director.fe_cmd_fifo.fifo_mem)
+## bsg_mem_1r1w: instantiating width_p=         80, els_p=          8, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.scheduler.issue_queue.preissue_fifo_mem)
+## bsg_mem_1r1w: instantiating width_p=        174, els_p=          8, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.scheduler.issue_queue.queue_fifo_mem)
+## bsg_mem_2r1w_sync: instantiating width_p=         66, els_p=        128, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.scheduler.int_regfile.twoport.regfile_mem)
+## bsg_mem_3r1w_sync: instantiating width_p=         66, els_p=        128, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.scheduler.fp_regfile.threeport.regfile_mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=        184, els_p=         64 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.tag_mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=         15, els_p=         64 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.stat_mem)
+## bsg_mem_1r1w: instantiating width_p=        509, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.commit_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        196, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.fwd_xbar.buffer[0].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        196, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.fwd_xbar.buffer[1].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        196, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.fwd_xbar.buffer[2].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[0].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[1].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[2].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[3].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[4].in_fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        195, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.rev_xbar.buffer[5].in_fifo.mem_1r1w)
+testbench.dut_clock_gen with cycle_time_p          10
+testbench.tb_clock_gen with cycle_time_p           2
+BSG-INFO: Initalizing mem with mem_str_p=prog.mem
+########### BP Parameters ##############
+########### TOP IF ##############
+bp_cfg_bus_s          bits: struct          61 width          61
+########### FE-BE IF ##############
+bp_fe_queue_s          bits: struct         174 width         174
+bp_fe_cmd_s            bits: struct         114 width         114
+########### LCE-CCE IF ##############
+bp_bedrock_lce_req_header_s       bits: struct          61 width          61
+bp_bedrock_lce_cmd_header_s       bits: struct          71 width          71
+bp_bedrock_lce_fill_header_s      bits: struct          71 width          71
+bp_bedrock_lce_resp_header_s      bits: struct          57 width          57
+########### CCE-MEM IF ##############
+bp_bedrock_mem_fwd_header_s           bits: struct          65 width          65
+bp_bedrock_mem_rev_header_s           bits: struct          65 width          65
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.icache_tracer initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_sys.csr.perf initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.dcache_tracer initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.watchdog initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.icache_uce.uce_tracer initializing...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.dcache_uce.uce_tracer initializing...
+BSG-INFO: testbench.dram.dram_tracer initializing...
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          4, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[0].l2s.fifo.unhardened.un.fifo.mem_1r1w)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=         48, els_p=         32 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.tag_mem)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=        256, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=          3, els_p=         32 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.stat_mem)
+## bsg_mem_1r1w: instantiating width_p=        128, els_p=          4, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.dma.in_fifo.unhardened.un.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          4, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[1].l2s.fifo.unhardened.un.fifo.mem_1r1w)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=         48, els_p=         32 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.tag_mem)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=        256, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem)
+## bsg_mem_1rw_sync_mask_write_bit: instantiating width_p=          3, els_p=         32 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.stat_mem)
+## bsg_mem_1r1w: instantiating width_p=        128, els_p=          4, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.dma.in_fifo.unhardened.un.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.icache_uce.fwd_pump_out.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.dcache_uce.fwd_pump_out.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.icache_uce.rev_pump_in.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.dcache_uce.rev_pump_in.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[0].l2s.cache_controller.stream_pump.in.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[1].l2s.cache_controller.stream_pump.in.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.loopback.fwd_pump_in.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[0].l2s.cache_controller.stream_pump.out.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.slices[1].l2s.cache_controller.stream_pump.out.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=        193, els_p=          2, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.loopback.rev_pump_out.gearbox.fifo.mem_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[0].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[0].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[1].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[1].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[2].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[2].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[3].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[3].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[4].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[4].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[5].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[5].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[6].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[6].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[7].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[7].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[8].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[8].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[9].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[9].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[10].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[10].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[11].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[11].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[12].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[12].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[13].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[13].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[14].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[14].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[15].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[15].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[16].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[16].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[17].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[17].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[18].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[18].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[19].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[19].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[20].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[20].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[21].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[21].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[22].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[22].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[23].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[23].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[24].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[24].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[25].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[25].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[26].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[26].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[27].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[27].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[28].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[28].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[29].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[29].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[30].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[30].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[31].ird_fifo.MSYNC_1r1w)
+## bsg_mem_1r1w: instantiating width_p=         81, els_p=       1024, read_write_same_addr_p=          0, harden_p=          0 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim.wb[31].frd_fifo.MSYNC_1r1w)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[0].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[1].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[2].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[3].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[4].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[5].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[6].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync_mask_write_byte: instantiating data_width_p=         64, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        512 (testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.d[7].data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[8].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[9].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[10].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[11].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[12].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[13].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[14].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[15].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[16].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[17].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[18].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[19].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[20].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[21].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[22].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[23].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[24].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[25].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[26].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[27].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[28].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[29].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[30].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[0].l2s.bank[0].cache.data_mem.synth.nz.bk[31].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[0].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[1].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[2].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[3].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[4].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[5].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[6].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[7].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[8].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[9].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[10].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[11].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[12].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[13].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[14].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[15].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[16].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[17].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[18].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[19].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[20].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[21].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[22].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[23].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[24].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[25].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[26].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[27].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[28].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[29].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[30].mem_1rw_sync)
+## bsg_mem_1rw_sync: instantiating width_p=          8, els_p=        128 (testbench.wrapper.processor.u.unicore.slices[1].l2s.bank[0].cache.data_mem.synth.nz.bk[31].mem_1rw_sync)
+__________ ___________  _______________________________
+\______   \\_   _____/ /   _____/\_   _____/\__    ___/
+ |       _/ |    __)_  \_____  \  |    __)_   |    |
+ |    |   \ |        \ /        \ |        \  |    |  0->1 time =          0
+ |____|_  //_______  //_______  //_______  /  |____|
+ ASYNC  \/         \/         \/         \/
+__________ ___________  _______________________________
+\______   \\_   _____/ /   _____/\_   _____/\__    ___/
+ |       _/ |    __)_  \_____  \  |    __)_   |    |
+ |    |   \ |        \ /        \ |        \  |    |  0->1 time =          0
+ |____|_  //_______  //_______  //_______  /  |____|
+ ASYNC  \/         \/         \/         \/
+__________ ___________  _______________________________
+\______   \\_   _____/ /   _____/\_   _____/\__    ___/
+ |       _/ |    __)_  \_____  \  |    __)_   |    |
+ |    |   \ |        \ /        \ |        \  |    |  1->0 time =        100
+ |____|_  //_______  //_______  //_______  /  |____|
+ ASYNC  \/         \/         \/         \/
+__________ ___________  _______________________________
+\______   \\_   _____/ /   _____/\_   _____/\__    ___/
+ |       _/ |    __)_  \_____  \  |    __)_   |    |
+ |    |   \ |        \ /        \ |        \  |    |  1->0 time =        200
+ |____|_  //_______  //_______  //_______  /  |____|
+ ASYNC  \/         \/         \/         \/
+=== BlackParrot Phase 1.4 Context Switching Demo ===
+Testing CSR 0x081 (CTXT) + CSR 0x082 (NPC bootstrap)
+
+Seeding and launching thread 1...
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       20823 cycles (mIPC ==         480)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30285 cycles (mIPC ==         330)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30335 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30336 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30320 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30289 cycles (mIPC ==         330)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30335 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30336 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30320 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30276 cycles (mIPC ==         330)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30348 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30332 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30324 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30272 cycles (mIPC ==         330)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30352 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30332 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30324 cycles (mIPC ==         329)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30272 cycles (mIPC ==         330)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       30352 cycles (mIPC ==         329)
+=== BlackParrot Phase 1.4 Context Switching Demo ===
+Testing CSR 0x081 (CTXT) + CSR 0x082 (NPC bootstrap)
+
+Seeding and launching thread 2...
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      117960 cycles (mIPC ==          84)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123481 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123377 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123510 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123533 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123413 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123481 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123502 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123473 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123481 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123473 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123502 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123481 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+=== BlackParrot Phase 1.4 Context Switching Demo ===
+Testing CSR 0x081 (CTXT) + CSR 0x082 (NPC bootstrap)
+
+Seeding and launching thread 3...
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      143379 cycles (mIPC ==          69)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123420 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123496 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123540 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123410 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123506 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123511 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123435 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123481 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123540 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123406 cycles (mIPC ==          81)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123510 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123540 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123569 cycles (mIPC ==          80)
+[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      123406 cycles (mIPC ==          81)
+=== BlackParrot Phase 1.4 Context Switching Demo ===
+Testing CSR 0x081 (CTXT) + CSR 0x082 (NPC bootstrap)
+
+
+Validation Results:
+C[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in      147030 cycles (mIPC ==          68)
+ontext 0x0000000000000000: sum=0x0000000000001356, fib=0x0000000000000262
+Context 0x0000000000000001: sum=0x0000000000000000 [FAIL], fib=0x0000000000000000 [FAIL] [NOT DONE]
+Context 0x0000000000000002: sum=0x0000000000000000 [FAIL], fib=[BSG-INFO]: Core 00000000 (     10000/      10000) instructions completed in       10548 cycles (mIPC ==         948)
+0x0000000000000000 [FAIL] [NOT DONE]
+Context 0x0000000000000003: sum=0x0000000000000000 [FAIL], fib=0x0000000000000000 [FAIL] [NOT DONE]
+
+Total cycles: 0x0000000000529975
+
+TEST FAILED
+[CORE FSH] FAIL
+        terminating...
+[BSG-FAIL]
+- /home/coyang/temp/black-parrot-sim/black-parrot/bp_top/test/common/bp_nonsynth_host.sv:117: Verilog $finish
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.fe.icache.icache_tracer terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_sys.csr.perf terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.calculator.pipe_mem.dcache.dcache_tracer terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.watchdog terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.core_minimal.be.cosim terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.icache_uce.uce_tracer terminating...
+BSG-INFO: testbench.wrapper.processor.u.unicore.unicore_lite.dcache_uce.uce_tracer terminating...
+BSG-INFO: testbench.dram.dram_tracer terminating...
+- S i m u l a t i o n   R e p o r t: Verilator 5.030 2024-10-27
+- Verilator: $finish at 54us; walltime 2934.836 s; speed 18.563 ns/s
+- Verilator: cpu 2930.340 s on 1 threads; alloced 92 MB
+[BSG-FAIL]
+- /home/coyang/temp/black-parrot-sim/black-parrot/bp_top/test/common/bp_nonsynth_host.sv:117: Verilog $finish
+--
+[BSG-FAIL]
+- /home/coyang/temp/black-parrot-sim/black-parrot/bp_top/test/common/bp_nonsynth_host.sv:117: Verilog $finish
+make: Leaving directory '/home/coyang/temp/black-parrot-sim/black-parrot/bp_top/verilator'

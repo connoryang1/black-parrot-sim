@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ROOT=/home/coyang/temp/black-parrot-sim
+ROOT=/home/coyang/black-parrot-sim
 export PATH=$ROOT/install/bin:/usr/bin:/bin:$PATH
 # TOP and BP_DIR must point to the black-parrot submodule so its Makefile.env
 # is found and $BP_DIR expands correctly in flist.vcs.
@@ -37,6 +37,8 @@ ls $ROOT/black-parrot-sdk/riscv/bp-tests/multithreading_demo.riscv
 # directly with BP_DIR in env and an absolute path to flist.vcs instead.
 RESDIR=$ROOT/black-parrot/bp_top/verilator/results/bp_tethered.e_bp_default_cfg
 mkdir -p $RESDIR
+# Remove stale verilator intermediate files to force a clean C++ rebuild
+rm -rf $ROOT/obj_dir
 # Regenerate flist.vcs
 cat $ROOT/black-parrot/bp_top/flist.vcs $ROOT/black-parrot/bp_top/test/tb/bp_tethered/flist.vcs > $RESDIR/flist.vcs
 sed -i "/^#/d" $RESDIR/flist.vcs
@@ -45,7 +47,7 @@ verilator -O2 --x-assign fast --x-initial fast -j 4 --timescale 1ps/1ps \
   --top-module testbench \
   $ROOT/black-parrot/bp_top/verilator/waiver.vlt \
   -f $RESDIR/flist.vcs \
-  -o $RESDIR/../simsc \
+  -o $RESDIR/simsc \
   --stats --autoflush \
   +define+BSG_NO_TIMESCALE --no-assert --Wno-fatal --Wno-lint --Wno-style -Wno-UNOPTFLAT \
   --binary \
@@ -64,8 +66,29 @@ verilator -O2 --x-assign fast --x-initial fast -j 4 --timescale 1ps/1ps \
   +define+BP_CFG_FLOWVAR=e_bp_default_cfg \
   2>&1 | tee $ROOT/black-parrot/bp_top/verilator/logs/simsc.bp_tethered.e_bp_default_cfg.log
 
+# compile Phase 2A tests
+$ROOT/install/bin/riscv64-unknown-elf-gcc \
+  -o $ROOT/black-parrot-sdk/riscv/bp-tests/mt_csr_isolation_test.riscv \
+  $ROOT/testing/mt_csr_isolation_test.c \
+  -I$ROOT/black-parrot-sdk/libperch \
+  -march=rv64gc \
+  -mabi=lp64d \
+  --specs=$ROOT/install/riscv64-unknown-elf/lib/dramfs.specs \
+  --specs=$ROOT/install/riscv64-unknown-elf/lib/perch.specs
+
+$ROOT/install/bin/riscv64-unknown-elf-gcc \
+  -o $ROOT/black-parrot-sdk/riscv/bp-tests/mt_benchmark.riscv \
+  $ROOT/testing/mt_benchmark.c \
+  -I$ROOT/black-parrot-sdk/libperch \
+  -march=rv64gc \
+  -mabi=lp64d \
+  --specs=$ROOT/install/riscv64-unknown-elf/lib/dramfs.specs \
+  --specs=$ROOT/install/riscv64-unknown-elf/lib/perch.specs
+
 # run tests
 make -C $ROOT/black-parrot/bp_top/verilator sim.verilator SUITE=bp-tests PROG=multithreading_demo
+make -C $ROOT/black-parrot/bp_top/verilator sim.verilator SUITE=bp-tests PROG=mt_csr_isolation_test
+make -C $ROOT/black-parrot/bp_top/verilator sim.verilator SUITE=bp-tests PROG=mt_benchmark
 
 # compile and run mt_regfile_test
 # $ROOT/install/bin/riscv64-unknown-elf-gcc \
